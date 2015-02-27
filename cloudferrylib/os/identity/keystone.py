@@ -19,6 +19,7 @@ from cloudferrylib.base import identity
 from cloudferrylib.utils import GeneratorPassword
 from cloudferrylib.utils import Postman
 from cloudferrylib.utils import Templater
+from cloudferrylib.utils import write_info
 from cloudferrylib.utils import utils as utl
 
 
@@ -282,6 +283,8 @@ class KeystoneIdentity(identity.Identity):
                                               password)
                 continue
 
+            self.dump_pass_to_file(user['name'], password)
+
             tenant_id = tenant_mapped_ids[user['tenantId']]
             _user['meta']['new_id'] = self.create_user(user['name'], password,
                                                        user['email'],
@@ -377,3 +380,8 @@ class KeystoneIdentity(identity.Identity):
             return self.templater.render(name_file, args)
         else:
             return None
+
+    def dump_pass_to_file(self, username, password):
+        pass_info = "User: %s\t Password: %s\n" % (username, password)
+        write_info(pass_info, info_file="pass_list.txt", mode='a')
+
