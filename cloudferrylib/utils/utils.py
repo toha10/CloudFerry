@@ -29,6 +29,7 @@ from multiprocessing import Lock
 from fabric.api import run, settings, local, env
 import ipaddr
 import yaml
+import csv
 
 
 ISCSI = "iscsi"
@@ -400,6 +401,22 @@ def render_info(info_values, template_path="templates", template_file="info.html
 def write_info(rendered_info, info_file="source_info.html", mode='wb'):
     with open(info_file, mode) as ifile:
         ifile.write(rendered_info)
+
+def write_csv(info, csv_file_path, header, mode='wb'):
+    with open(csv_file_path, mode) as csvfile:
+
+        writer = csv.DictWriter(csvfile, fieldnames=header)
+        writer.writeheader()
+
+        for row in info:
+
+            if len(header) != len(row):
+                raise IndexError("Header does not match passed info.")
+
+            pass_info = {}
+            for item in xrange(len(header)):
+                pass_info[header[item]] = row[item]
+            writer.writerow(pass_info)
 
 
 def get_libvirt_block_info(libvirt_name, init_host, compute_host):

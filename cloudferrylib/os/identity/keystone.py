@@ -19,7 +19,7 @@ from cloudferrylib.base import identity
 from cloudferrylib.utils import GeneratorPassword
 from cloudferrylib.utils import Postman
 from cloudferrylib.utils import Templater
-from cloudferrylib.utils import write_info
+from cloudferrylib.utils import write_csv
 from cloudferrylib.utils import utils as utl
 
 
@@ -270,6 +270,9 @@ class KeystoneIdentity(identity.Identity):
 
         keep_passwd = self.config['migrate']['keep_user_passwords']
         overwrite_passwd = self.config['migrate']['overwrite_user_passwords']
+
+        users_pass_info = list()
+
         for _user in users:
             user = _user['user']
             password = self._generate_password()
@@ -283,17 +286,21 @@ class KeystoneIdentity(identity.Identity):
                                               password)
                 continue
 
-            self.dump_pass_to_file(user['name'], password)
-
             tenant_id = tenant_mapped_ids[user['tenantId']]
             _user['meta']['new_id'] = self.create_user(user['name'], password,
                                                        user['email'],
                                                        tenant_id).id
-            if self.config['migrate']['keep_user_passwords']:
+
+            if keep_passwd:
                 _user['meta']['overwrite_password'] = True
             else:
+                tenant_name = self.get_tenant_by_id(tenant_id).name
+                users_pass_info.append([tenant_name, user['name'], password])
                 self._passwd_notification(user['email'], user['name'],
                                           password)
+
+        if not keep_passwd:
+            self.dump_passes_to_file(users_pass_info)
 
     def _passwd_notification(self, email, name, password):
         if not self.postman:
@@ -381,7 +388,6 @@ class KeystoneIdentity(identity.Identity):
         else:
             return None
 
-    def dump_pass_to_file(self, username, password):
-        pass_info = "User: %s\t Password: %s\n" % (username, password)
-        write_info(pass_info, info_file="pass_list.txt", mode='a')
-
+    def dump_passes_to_file(self, info, file_path="pass_list.csv"):
+        table_header = ['Tenant', 'User', 'Password']
+        write_csv(info=info, csv_file_path=file_path, header=table_header)
