@@ -32,6 +32,8 @@ DISK = "disk"
 LOCAL = ".local"
 LEN_UUID_INSTANCE = 36
 INTERFACES = "interfaces"
+DEFAULT_QOUTA_VALUE = -1
+SERVICES_TENANT_NAME = 'services'
 
 
 class NovaCompute(compute.Compute):
@@ -93,9 +95,31 @@ class NovaCompute(compute.Compute):
             info['flavors'][flavor.id] = self.convert(flavor)
 
         if self.config.migrate.migrate_quotas:
-            self._read_info_quotas(info)
+            info['project_quotas'], info['user_quotas'] = \
+                self._read_info_quotas_api()
 
         return info
+
+    def _read_info_quotas_api(self):
+        tenant_ids = [tenant.id for tenant in self.identity.get_tenants_list()
+                      if tenant.name != SERVICES_TENANT_NAME]
+        user_ids = [user.id for user in self.identity.get_users_list()]
+        project_qoutas = list()
+        user_quotas = list()
+
+        for tenant_id in tenant_ids:
+            project_quota = self.get_quotas(tenant_id=tenant_id)
+            project_quota_info = self.convert(project_quota)
+            project_quota_info['tenant_id'] = tenant_id
+            project_qoutas.append(project_quota_info)
+            for user_id in user_ids:
+                user_qouta = self.get_quotas(tenant_id=tenant_id, user_id=user_id)
+                user_qouta_info = self.convert(user_qouta)
+                user_qouta_info['tenant_id'] = tenant_id
+                user_qouta_info['user_id'] = user_id
+                user_quotas.append(user_qouta_info)
+
+        return project_qoutas, user_quotas
 
     def read_info(self, target='instances', **kwargs):
         """
@@ -241,10 +265,22 @@ class NovaCompute(compute.Compute):
                                'rxtx_factor': compute_obj.rxtx_factor,
                                'is_public': compute_obj.is_public},
                     'meta': {}}
+        elif isinstance(compute_obj, nova_client.quotas.QuotaSet):
+            return {'quota': {'cores': compute_obj.cores,
+                              'fixed_ips': compute_obj.fixed_ips,
+                              'floating_ips': compute_obj.floating_ips,
+                              'instances': compute_obj.instances,
+                              'key_pairs': compute_obj.key_pairs,
+                              'ram': compute_obj.ram,
+                              'security_group_rules': compute_obj.security_group_rules,
+                              'security_groups': compute_obj.security_groups},
+                    'meta': {}}
 
     @staticmethod
     def convert(obj, cfg=None, cloud=None):
-        res_tuple = (nova_client.keypairs.Keypair, nova_client.flavors.Flavor)
+        res_tuple = (nova_client.keypairs.Keypair,
+                     nova_client.flavors.Flavor,
+                     nova_client.quotas.QuotaSet)
 
         if isinstance(obj, nova_client.servers.Server):
             return NovaCompute.convert_instance(obj, cfg, cloud)
@@ -273,10 +309,8 @@ class NovaCompute(compute.Compute):
         self._deploy_keypair(info['keypairs'])
         self._deploy_flavors(info['flavors'])
         if self.config['migrate']['migrate_quotas']:
-            self._deploy_project_quotas(info['project_quotas'],
-                                        tenant_map)
-            self._deploy_user_quotas(info['user_quotas'],
-                                     tenant_map, user_map)
+            self._deploy_quotas_api(info['project_quotas'], tenant_map)
+            self._deploy_quotas_api(info['user_quotas'], tenant_map, user_map)
 
         new_info = self.read_info(target='resources')
 
@@ -353,6 +387,23 @@ class NovaCompute(compute.Compute):
                     ))
                 else:
                     raise
+
+    def _deploy_quotas_api(self, quotas, tenant_map, user_map=None):
+        for _qouta in quotas:
+            old_tenant_id = _qouta['tenant_id']
+            tenant_id = tenant_map[old_tenant_id]
+            user_id = None
+            if user_map:
+                old_user_id = _qouta['user_id']
+                user_id = user_map[old_user_id]
+            quota = _qouta['quota']
+            qouta_info = dict()
+
+            for qouta_name, qouta_value in quota.iteritems():
+                if qouta_value != DEFAULT_QOUTA_VALUE:
+                    qouta_info[qouta_name] = qouta_value
+
+            self.update_quota(tenant_id=tenant_id, user_id=user_id, **qouta_info)
 
     def _deploy_keypair(self, keypairs):
         dest_keypairs = [keypair.name for keypair in self.get_keypair_list()]
@@ -542,6 +593,12 @@ class NovaCompute(compute.Compute):
 
     def create_keypair(self, name, public_key=None):
         return self.nova_client.keypairs.create(name, public_key)
+
+    def get_quotas(self, tenant_id, user_id=None):
+        return self.nova_client.quotas.get(tenant_id, user_id)
+
+    def update_quota(self, tenant_id, user_id=None, **qouta_items):
+        return self.nova_client.quotas.update(tenant_id=tenant_id, user_id=user_id, **qouta_items)
 
     def get_interface_list(self, server_id):
         return self.nova_client.servers.interface_list(server_id)
