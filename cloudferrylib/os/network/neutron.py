@@ -36,7 +36,6 @@ class NeutronNetwork(network.Network):
         super(NeutronNetwork, self).__init__(config)
         self.cloud = cloud
         self.identity_client = cloud.resources['identity']
-        # TODO: implement switch to quantumclient if we have quantum-server
         self.neutron_client = self.proxy(self.get_client(), config)
         self.ext_net_map = utl.get_opt_config(self.config.migrate.ext_net_map) \
             if utl.get_opt_config(self.config.migrate.ext_net_map) else {}
