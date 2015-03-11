@@ -273,7 +273,11 @@ class NovaCompute(compute.Compute):
                               'key_pairs': compute_obj.key_pairs,
                               'ram': compute_obj.ram,
                               'security_group_rules': compute_obj.security_group_rules,
-                              'security_groups': compute_obj.security_groups},
+                              'security_groups': compute_obj.security_groups,
+                              'injected_file_content_bytes': compute_obj.injected_file_content_bytes,
+                              'injected_file_path_bytes': compute_obj.injected_file_path_bytes,
+                              'injected_files': compute_obj.injected_files,
+                              'metadata_items': compute_obj.metadata_items},
                     'meta': {}}
 
     @staticmethod
