@@ -32,7 +32,7 @@ FAKE_CONFIG = utils.ext_dict(
                           'service_tenant': 'services'}),
     migrate=utils.ext_dict({'speed_limit': '10MB',
                             'retry': '7',
-                            'time_wait': '5',
+                            'time_wait': 5,
                             'keep_user_passwords': False,
                             'overwrite_user_passwords': False}),
     mail=utils.ext_dict({'server': '-'}))
