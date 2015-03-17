@@ -21,11 +21,17 @@ from cloudferrylib.utils import Postman
 from cloudferrylib.utils import Templater
 from cloudferrylib.utils import write_csv
 from cloudferrylib.utils import utils as utl
+import datetime
 
 
 LOG = utl.get_log(__name__)
 
 NOVA_SERVICE = 'nova'
+PASS_LIST = 'pass_list_'
+CSV = '.csv'
+TENANT = 'Tenant'
+USER = 'User'
+PASSWORD = 'Password'
 
 
 class KeystoneIdentity(identity.Identity):
@@ -388,6 +394,8 @@ class KeystoneIdentity(identity.Identity):
         else:
             return None
 
-    def dump_passes_to_file(self, info, file_path="pass_list.csv"):
-        table_header = ['Tenant', 'User', 'Password']
+    def dump_passes_to_file(self, info, file_path=None):
+        if not file_path:
+            file_path = PASS_LIST + datetime.datetime.now().isoformat() + CSV
+        table_header = [TENANT, USER, PASSWORD]
         write_csv(info=info, csv_file_path=file_path, header=table_header)
