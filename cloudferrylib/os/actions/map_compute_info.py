@@ -33,10 +33,10 @@ class MapComputeInfo(action.Action):
         dst_compute = self.dst_cloud.resources[utl.COMPUTE_RESOURCE]
 
         src_flavors_dict = \
-            {flavor.id: flavor.name for flavor in src_compute.get_flavor_list()}
+            {flavor.id: flavor.name for flavor in src_compute.get_flavor_list(is_public=None)}
 
         dst_flavors_dict = \
-            {flavor.name: flavor.id for flavor in dst_compute.get_flavor_list()}
+            {flavor.name: flavor.id for flavor in dst_compute.get_flavor_list(is_public=None)}
 
         for instance_id, instance in new_compute_info[utl.INSTANCES_TYPE].iteritems():
             _instance = instance['instance']
