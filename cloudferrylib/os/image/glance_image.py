@@ -25,6 +25,7 @@ from glanceclient.v1 import client as glance_client
 from cloudferrylib.base import image
 from cloudferrylib.utils import file_like_proxy
 from cloudferrylib.utils import utils as utl
+from cloudferrylib.utils import timeout_exception
 
 
 LOG = utl.get_log(__name__)
@@ -213,9 +214,15 @@ class GlanceImage(image.Image):
         new_info['images'].update(empty_image_list)
         return new_info
 
-    def wait_for_status(self, id_res, status):
-        while self.glance_client.images.get(id_res).status != status:
-            time.sleep(1)
+    def wait_for_status(self, id_res, status, limit_retry=90):
+        count = 0
+        getter = self.glance_client.images
+        while getter.get(id_res).status.lower() != status.lower():
+            time.sleep(5)
+            count += 1
+            if count > limit_retry:
+                raise timeout_exception.TimeoutException(
+                    getter.get(id_res).status.lower(), status, "Timeout exp")
 
     def patch_image(self, backend_storage, image_id):
         if backend_storage == 'ceph':
