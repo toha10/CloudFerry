@@ -693,3 +693,6 @@ class NovaCompute(compute.Compute):
 
     def dissociate_floatingip(self, instance_id, floatingip):
         self.nova_client.servers.remove_floating_ip(instance_id, floatingip)
+
+    def create_snapshot(self, instance_id, snapshot_name, metadata=None):
+        return self.nova_client.servers.create_image(instance_id, snapshot_name, metadata)
