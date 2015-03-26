@@ -79,17 +79,28 @@ class NovaCompute(compute.Compute):
                            'hard_limit': quota[2]},
                  'meta': {}})
 
+    def _read_info_keypairs(self, info):
+        keypairs_cmd = ("SELECT name, user_id, fingerprint, "
+                        "public_key FROM key_pairs WHERE "
+                        "deleted = 0")
+        for keypair in self.mysql_connector.execute(keypairs_cmd):
+            info['keypairs'].append(
+                {'keypair': {'name': keypair[0],
+                             'user_id': keypair[1],
+                             'fingerprint': keypair[2],
+                             'public_key': keypair[3]},
+                 'meta': {}})
+
     def _read_info_resources(self, **kwargs):
         """
         Read info about compute resources except instances from the cloud.
         """
-        info = {'keypairs': {},
+        info = {'keypairs': [],
                 'flavors': {},
                 'user_quotas': [],
                 'project_quotas': []}
 
-        for keypair in self.get_keypair_list():
-            info['keypairs'][keypair.id] = self.convert(keypair)
+        self._read_info_keypairs(info)
 
         for flavor in self.get_flavor_list(is_public=None):
             info['flavors'][flavor.id] = self.convert(flavor, cloud=self.cloud)
