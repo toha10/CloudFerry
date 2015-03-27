@@ -79,17 +79,21 @@ class NovaCompute(compute.Compute):
                            'hard_limit': quota[2]},
                  'meta': {}})
 
-    def _read_info_keypairs(self, info):
+    def _read_info_keypairs(self):
         keypairs_cmd = ("SELECT name, user_id, fingerprint, "
                         "public_key FROM key_pairs WHERE "
                         "deleted = 0")
+        keypairs_info = []
+
         for keypair in self.mysql_connector.execute(keypairs_cmd):
-            info['keypairs'].append(
+            keypairs_info.append(
                 {'keypair': {'name': keypair[0],
                              'user_id': keypair[1],
                              'fingerprint': keypair[2],
                              'public_key': keypair[3]},
                  'meta': {}})
+
+        return keypairs_info
 
     def _read_info_resources(self, **kwargs):
         """
@@ -100,7 +104,7 @@ class NovaCompute(compute.Compute):
                 'user_quotas': [],
                 'project_quotas': []}
 
-        self._read_info_keypairs(info)
+        info['keypairs'] = self._read_info_keypairs()
 
         for flavor in self.get_flavor_list(is_public=None):
             info['flavors'][flavor.id] = self.convert(flavor, cloud=self.cloud)
@@ -262,12 +266,7 @@ class NovaCompute(compute.Compute):
     @staticmethod
     def convert_resources(compute_obj, cloud):
 
-        if isinstance(compute_obj, nova_client.keypairs.Keypair):
-            return {'keypair': {'name': compute_obj.name,
-                                'public_key': compute_obj.public_key},
-                    'meta': {}}
-
-        elif isinstance(compute_obj, nova_client.flavors.Flavor):
+        if isinstance(compute_obj, nova_client.flavors.Flavor):
 
             compute_res = cloud.resources[utl.COMPUTE_RESOURCE]
             tenants = None
@@ -303,8 +302,7 @@ class NovaCompute(compute.Compute):
 
     @staticmethod
     def convert(obj, cfg=None, cloud=None):
-        res_tuple = (nova_client.keypairs.Keypair,
-                     nova_client.flavors.Flavor,
+        res_tuple = (nova_client.flavors.Flavor,
                      nova_client.quotas.QuotaSet)
 
         if isinstance(obj, nova_client.servers.Server):
@@ -313,7 +311,7 @@ class NovaCompute(compute.Compute):
             return NovaCompute.convert_resources(obj, cloud)
 
         LOG.error('NovaCompute converter has received incorrect value. Please '
-                  'pass to it only instance, keypair or flavor objects.')
+                  'pass to it only instance, flavor or quota objects.')
         return None
 
     def _deploy_resources(self, info, **kwargs):
@@ -457,14 +455,6 @@ class NovaCompute(compute.Compute):
                     quota_info[quota_name] = quota_value
 
             self.update_quota(tenant_id=tenant_id, user_id=user_id, **quota_info)
-
-    def _deploy_keypair(self, keypairs):
-        dest_keypairs = [keypair.name for keypair in self.get_keypair_list()]
-        for _keypair in keypairs.itervalues():
-            keypair = _keypair['keypair']
-            if keypair['name'] in dest_keypairs:
-                continue
-            self.create_keypair(keypair['name'], keypair['public_key'])
 
     def _deploy_flavors(self, flavors, tenant_map):
         dest_flavors = {flavor.name: flavor.id for flavor in
