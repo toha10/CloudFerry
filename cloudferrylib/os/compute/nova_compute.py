@@ -331,7 +331,7 @@ class NovaCompute(compute.Compute):
         user_map = {user['user']['id']: user['meta']['new_id'] for user in
                     identity_info['users']}
 
-        self._deploy_keypair(info['keypairs'])
+        self._deploy_key_pairs(info['keypairs'], user_map)
         self._deploy_flavors(info['flavors'], tenant_map)
         if self.config['migrate']['migrate_quotas']:
             self._deploy_quotas_api(info['project_quotas'], tenant_map)
@@ -409,6 +409,34 @@ class NovaCompute(compute.Compute):
                         quota['hard_limit'],
                         tenant_map[quota['project_id']],
                         quota['resource'],
+                    ))
+                else:
+                    raise
+
+    def _deploy_key_pairs(self, key_pairs, user_map):
+        insert_cmd = ("INSERT INTO key_pairs (name, user_id, "
+                      "fingerprint, public_key, deleted) "
+                      "VALUES ('%s', '%s', '%s', '%s', 0)")
+
+        update_cmd = ("UPDATE key_pairs SET fingerprint='%s', "
+                      "public_key='%s' WHERE name='%s' "
+                      "AND user_id='%s' AND deleted=0")
+
+        for _key_pair in key_pairs:
+            key_pair = _key_pair['keypair']
+            try:
+                self.mysql_connector.execute(insert_cmd % (
+                    key_pair['name'],
+                    user_map[key_pair['user_id']],
+                    key_pair['fingerprint'],
+                    key_pair['public_key']))
+            except exc.IntegrityError as e:
+                if 'Duplicate entry' in e.message:
+                    self.mysql_connector.execute(update_cmd % (
+                        key_pair['fingerprint'],
+                        key_pair['public_key'],
+                        key_pair['name'],
+                        user_map[key_pair['user_id']]
                     ))
                 else:
                     raise
