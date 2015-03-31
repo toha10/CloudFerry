@@ -15,13 +15,17 @@
 
 from cloudferrylib.base.action import action
 from cloudferrylib.utils import utils as utl
+import copy
 
 SNAPSHOT_PREFIX = 'snapshot_'
 ACTIVE_STATE = 'active'
+ID = 'id'
 
 class CreateSnapshot(action.Action):
 
     def run(self, info=None, **kwargs):
+
+        info = copy.deepcopy(info)
         compute_resource = self.cloud.resources[utl.COMPUTE_RESOURCE]
         image_resource = self.cloud.resources[utl.IMAGE_RESOURCE]
 
@@ -30,6 +34,10 @@ class CreateSnapshot(action.Action):
             snapshot_id = compute_resource.create_snapshot(instance_id,
                                                            snapshot_name)
             image_resource.wait_for_status(snapshot_id, ACTIVE_STATE)
+            info[utl.INSTANCES_TYPE][instance_id][SNAPSHOT_PREFIX + ID] = snapshot_id
 
-        return {}
+
+        return {
+            'info': info
+        }
 
