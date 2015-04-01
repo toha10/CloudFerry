@@ -102,7 +102,11 @@ migrate_opts = [
     cfg.IntOpt('time_wait', default='5',
                help='Time wait if except Performing error'),
     cfg.IntOpt('ssh_chunk_size', default=100,
-               help='Size of one chunk to transfer via SSH')
+               help='Size of one chunk to transfer via SSH'),
+    cfg.StrOpt('instance_migration_strategy', default='direct',
+               help='migration strategy for instances data transferring:'
+                    'direct - transfer data via ssh, '
+                    'snapshot - creating and transferring snapshot')
 ]
 
 mail = cfg.OptGroup(name='mail',

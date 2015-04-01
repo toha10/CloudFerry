@@ -71,6 +71,7 @@ from cloudferrylib.os.actions import get_info_volumes
 from cloudferrylib.os.actions import get_info_objects
 from cloudferrylib.os.actions import copy_object2object
 from cloudferrylib.os.actions import fake_action
+from cloudferrylib.os.actions import create_snapshot
 
 
 class OS2OSFerry(cloud_ferry.CloudFerry):
@@ -319,13 +320,33 @@ class OS2OSFerry(cloud_ferry.CloudFerry):
                act_post_transport_instance >> \
                act_transport_ephemeral
 
+    def migrate_instance_by_snapshots(self):
+        act_map_com_info_2 = map_compute_info.MapComputeInfo(self.init)
+        act_net_prep_2 = prepare_networks.PrepareNetworks(self.init, cloud='dst_cloud')
+        act_deploy_instances = transport_instance.TransportInstance(self.init)
+        return act_map_com_info_2 >> \
+               act_net_prep_2 >> \
+               act_deploy_instances
+
     def migrate_process_instance(self):
+        act_create_snapshot = create_snapshot.CreateSnapshot(self.init, cloud='src_cloud')
         act_attaching = attach_used_volumes_via_compute.AttachVolumesCompute(self.init, cloud='dst_cloud')
         act_stop_vms = stop_vm.StopVms(self.init, cloud='src_cloud')
         act_start_vms = start_vm.StartVms(self.init, cloud='dst_cloud')
-        #transport_resource_inst = self.migrate_resources_by_instance_via_ssh()
-        transport_resource_inst = self.migrate_resources_by_instance()
+        transport_resource_inst_direct = self.migrate_resources_by_instance_via_ssh()
+        transport_resource_inst_snapshot = self.migrate_resources_by_instance_via_ssh()
+        # transport_resource_inst = self.migrate_resources_by_instance()
         transport_inst = self.migrate_instance()
+        transport_inst_by_snapshots = self.migrate_instance_by_snapshots()
         act_dissociate_floatingip = dissociate_floatingip_via_compute.DissociateFloatingip(self.init, cloud='src_cloud')
-        return act_stop_vms >> transport_resource_inst >> transport_inst >> \
+        check_strategy = is_option.IsOption(self.init,
+                                            'instance_migration_strategy',
+                                            'snapshot')
+
+        task_direct_flow = (transport_resource_inst_direct >> transport_inst).go_end() - act_attaching
+        task_snapshot_flow = (act_create_snapshot >> transport_resource_inst_snapshot >> transport_inst_by_snapshots).go_end() - act_attaching
+        task_direct_flow = task_direct_flow.go_start()
+        task_snapshot_flow = task_snapshot_flow.go_start()
+
+        return act_stop_vms >> (check_strategy | task_snapshot_flow | task_direct_flow) >> \
                act_attaching >> act_dissociate_floatingip >> act_start_vms

@@ -19,6 +19,9 @@ from cloudferrylib.base.action import action
 from cloudferrylib.utils import utils as utl
 
 
+SNAPSHOT = 'snapshot'
+SNAPSHOT_ID = 'snapshot_id'
+
 def get_boot_volume(instance):
     return instance[utl.INSTANCE_BODY]['boot_volume']
 
@@ -34,6 +37,7 @@ class ConvertComputeToImage(action.Action):
     def __init__(self, init, cloud=None, target_output='images_info'):
         super(ConvertComputeToImage, self).__init__(init, cloud)
         self.target_output = target_output
+        self.migrate_conf = self.cloud.cloud_config.migrate
 
     def run(self, info=None, **kwargs):
         info = copy.deepcopy(info)
@@ -51,6 +55,8 @@ class ConvertComputeToImage(action.Action):
                                                         storage_resource)
             else:
                 image_id = _instance['image_id']
+                if self.migrate_conf.instance_migration_strategy == SNAPSHOT:
+                    image_id = instance[SNAPSHOT_ID]
             # TODO: Case when image is None
             if image_id:
                 img = image_resource.read_info(image_id=image_id)
