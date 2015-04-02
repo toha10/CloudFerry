@@ -21,8 +21,9 @@ PATH_TWO = 2
 
 class IsOption(action.Action):
 
-    def __init__(self, init, option_name):
+    def __init__(self, init, option_name, value = None):
         self.option_name = option_name
+        self.value = value
         super(IsOption, self).__init__(init)
 
     def run(self, **kwargs):
@@ -30,6 +31,9 @@ class IsOption(action.Action):
         option_value = self.cfg.migrate[self.option_name]
         if option_value:
             self.set_next_path(PATH_ONE)
+            if self.value:
+                if option_value != self.value:
+                    self.set_next_path(PATH_TWO)
         else:
             self.set_next_path(PATH_TWO)
         return {}
