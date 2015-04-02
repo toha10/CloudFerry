@@ -20,6 +20,7 @@ import copy
 SNAPSHOT_PREFIX = 'snapshot_'
 ACTIVE_STATE = 'active'
 ID = 'id'
+NAME = 'name'
 
 class CreateSnapshot(action.Action):
 
@@ -29,8 +30,8 @@ class CreateSnapshot(action.Action):
         compute_resource = self.cloud.resources[utl.COMPUTE_RESOURCE]
         image_resource = self.cloud.resources[utl.IMAGE_RESOURCE]
 
-        for instance_id in info[utl.INSTANCES_TYPE]:
-            snapshot_name = SNAPSHOT_PREFIX + instance_id
+        for instance_id, instance in info[utl.INSTANCES_TYPE].iteritems():
+            snapshot_name = SNAPSHOT_PREFIX + instance[utl.INSTANCE_BODY][NAME]
             snapshot_id = compute_resource.create_snapshot(instance_id,
                                                            snapshot_name)
             image_resource.wait_for_status(snapshot_id, ACTIVE_STATE)

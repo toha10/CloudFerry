@@ -321,12 +321,14 @@ class OS2OSFerry(cloud_ferry.CloudFerry):
                act_transport_ephemeral
 
     def migrate_instance_by_snapshots(self):
-        act_map_com_info_2 = map_compute_info.MapComputeInfo(self.init)
-        act_net_prep_2 = prepare_networks.PrepareNetworks(self.init, cloud='dst_cloud')
+        act_map_com_info = map_compute_info.MapComputeInfo(self.init)
+        act_net_prep = prepare_networks.PrepareNetworks(self.init, cloud='dst_cloud')
         act_deploy_instances = transport_instance.TransportInstance(self.init)
-        return act_map_com_info_2 >> \
-               act_net_prep_2 >> \
-               act_deploy_instances
+        act_transport_ephemeral = transport_ephemeral.TransportEphemeral(self.init, cloud='dst_cloud')
+        return act_map_com_info >> \
+               act_net_prep >> \
+               act_deploy_instances >> \
+               act_transport_ephemeral
 
     def migrate_process_instance(self):
         act_create_snapshot = create_snapshot.CreateSnapshot(self.init, cloud='src_cloud')
