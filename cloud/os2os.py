@@ -72,6 +72,7 @@ from cloudferrylib.os.actions import get_info_objects
 from cloudferrylib.os.actions import copy_object2object
 from cloudferrylib.os.actions import fake_action
 from cloudferrylib.os.actions import create_snapshot
+from cloudferrylib.os.actions import is_boot_from_volume
 
 
 class OS2OSFerry(cloud_ferry.CloudFerry):
@@ -341,14 +342,20 @@ class OS2OSFerry(cloud_ferry.CloudFerry):
         transport_inst = self.migrate_instance()
         transport_inst_by_snapshots = self.migrate_instance_by_snapshots()
         act_dissociate_floatingip = dissociate_floatingip_via_compute.DissociateFloatingip(self.init, cloud='src_cloud')
+
         check_strategy = is_option.IsOption(self.init,
                                             'instance_migration_strategy',
                                             'snapshot')
 
+        check_boot_from_volume = is_boot_from_volume.IsBootFromVolume(self.init)
+
         task_direct_flow = (transport_resource_inst_direct >> transport_inst).go_end() - act_attaching
-        task_snapshot_flow = (act_create_snapshot >> transport_resource_inst_snapshot >> transport_inst_by_snapshots).go_end() - act_attaching
+        task_snapshot_flow = \
+            (act_create_snapshot >> transport_resource_inst_snapshot >>
+             transport_inst_by_snapshots).go_end() - act_attaching
         task_direct_flow = task_direct_flow.go_start()
         task_snapshot_flow = task_snapshot_flow.go_start()
+        task_snapshot_flow = (check_boot_from_volume | task_direct_flow) - task_snapshot_flow
 
         return act_stop_vms >> (check_strategy | task_snapshot_flow | task_direct_flow) >> \
                act_attaching >> act_dissociate_floatingip >> act_start_vms
