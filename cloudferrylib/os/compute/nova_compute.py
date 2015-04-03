@@ -34,6 +34,7 @@ LEN_UUID_INSTANCE = 36
 INTERFACES = "interfaces"
 DEFAULT_QUOTA_VALUE = -1
 SERVICES_TENANT_NAME = 'services'
+SNAPSHOT = 'snapshot'
 
 
 class NovaCompute(compute.Compute):
@@ -155,14 +156,15 @@ class NovaCompute(compute.Compute):
         info = {'instances': {}}
 
         for instance in self.get_instances_list(search_opts=search_opts):
-            info['instances'][instance.id] = self.convert(instance,
+            info['instances'][instance.id] = self.convert(self.nova_client,
+                                                          instance,
                                                           self.config,
                                                           self.cloud)
 
         return info
 
     @staticmethod
-    def convert_instance(instance, cfg, cloud):
+    def convert_instance(client, instance, cfg, cloud):
         identity_res = cloud.resources[utl.IDENTITY_RESOURCE]
         compute_res = cloud.resources[utl.COMPUTE_RESOURCE]
 
@@ -231,6 +233,8 @@ class NovaCompute(compute.Compute):
                 instance_block_info,
                 is_ceph_ephemeral=is_ceph)
 
+        disk_size = client.flavors.get(instance.flavor['id']).disk
+
         inst = {'instance': {'name': instance.name,
                              'instance_name': instance_name,
                              'id': instance.id,
@@ -254,7 +258,8 @@ class NovaCompute(compute.Compute):
                              'interfaces': interfaces,
                              'host': instance_host,
                              'is_ephemeral': is_ephemeral,
-                             'volumes': volumes
+                             'volumes': volumes,
+                             'disk_size': disk_size
                              },
                 'ephemeral': ephemeral_path,
                 'diff': diff,
@@ -301,12 +306,12 @@ class NovaCompute(compute.Compute):
                     'meta': {}}
 
     @staticmethod
-    def convert(obj, cfg=None, cloud=None):
+    def convert(client, obj, cfg=None, cloud=None):
         res_tuple = (nova_client.flavors.Flavor,
                      nova_client.quotas.QuotaSet)
 
         if isinstance(obj, nova_client.servers.Server):
-            return NovaCompute.convert_instance(obj, cfg, cloud)
+            return NovaCompute.convert_instance(client, obj, cfg, cloud)
         elif isinstance(obj, res_tuple):
             return NovaCompute.convert_resources(obj, cloud)
 
@@ -516,6 +521,18 @@ class NovaCompute(compute.Compute):
                     "boot_index": 0
                 }]
                 create_params['image'] = None
+            if self.config.migrate.instance_migration_strategy == SNAPSHOT \
+                    and self.config.migrate.instance_convert_to_bfv:
+                if instance['boot_mode'] == utl.BOOT_FROM_IMAGE:
+                    create_params["block_device_mapping_v2"] = [{
+                        "source_type": "image",
+                        "uuid": instance['image_id'],
+                        "destination_type": "volume",
+                        "volume_size": instance['disk_size'],
+                        "delete_on_termination": False,
+                        "boot_index": 0
+                    }]
+                    create_params['image'] = None
             new_id = self.create_instance(**create_params)
             new_ids[new_id] = instance['id']
         self.nova_client = nova_tenants_clients[self.config['cloud']['tenant']]

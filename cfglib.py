@@ -106,7 +106,12 @@ migrate_opts = [
     cfg.StrOpt('instance_migration_strategy', default='direct',
                help='migration strategy for instances data transferring:'
                     'direct - transfer data via ssh, '
-                    'snapshot - creating and transferring snapshot')
+                    'snapshot - creating and transferring snapshot'),
+    cfg.StrOpt('instance_convert_to_bfv', default=False,
+               help='True - instances which were booted from image '
+                    'will be created with boot_from_volume option after migration '
+                    'and their snapshot will be source image, '
+                    'False - do not change instance boot settings')
 ]
 
 mail = cfg.OptGroup(name='mail',
