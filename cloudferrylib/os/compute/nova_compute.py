@@ -108,7 +108,8 @@ class NovaCompute(compute.Compute):
         info['keypairs'] = self._read_info_keypairs()
 
         for flavor in self.get_flavor_list(is_public=None):
-            info['flavors'][flavor.id] = self.convert(flavor, cloud=self.cloud)
+            info['flavors'][flavor.id] = self.convert(self.nova_client,
+                                                      flavor, cloud=self.cloud)
 
         if self.config.migrate.migrate_quotas:
             info['project_quotas'], info['user_quotas'] = \
@@ -125,12 +126,12 @@ class NovaCompute(compute.Compute):
 
         for tenant_id in tenant_ids:
             project_quota = self.get_quotas(tenant_id=tenant_id)
-            project_quota_info = self.convert(project_quota)
+            project_quota_info = self.convert(self.nova_client, project_quota)
             project_quota_info['tenant_id'] = tenant_id
             project_quotas.append(project_quota_info)
             for user_id in user_ids:
                 user_quota = self.get_quotas(tenant_id=tenant_id, user_id=user_id)
-                user_quota_info = self.convert(user_quota)
+                user_quota_info = self.convert(self.nova_client, user_quota)
                 user_quota_info['tenant_id'] = tenant_id
                 user_quota_info['user_id'] = user_id
                 user_quotas.append(user_quota_info)
