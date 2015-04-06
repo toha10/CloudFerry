@@ -73,6 +73,8 @@ from cloudferrylib.os.actions import copy_object2object
 from cloudferrylib.os.actions import fake_action
 from cloudferrylib.os.actions import create_snapshot
 from cloudferrylib.os.actions import is_boot_from_volume
+from cloudferrylib.os.actions import get_info_compute_resources
+from cloudferrylib.os.actions import add_custom_flavors
 
 
 class OS2OSFerry(cloud_ferry.CloudFerry):
@@ -257,9 +259,17 @@ class OS2OSFerry(cloud_ferry.CloudFerry):
     def transport_resources(self):
         act_identity_trans = identity_transporter.IdentityTransporter(self.init)
         task_images_trans = self.migration_images()
+        act_get_comp_res_info = get_info_compute_resources.GetInfoComputeResources(self.init,
+                                                                                   cloud='src_cloud')
         act_comp_res_trans = transport_compute_resources.TransportComputeResources(self.init)
+        act_add_custom_flavors = add_custom_flavors.AddCustomFlavors(self.init) - act_comp_res_trans
+        is_custom_flavors = is_option.IsOption(self.init, 'custom_flavors')
+        act_fake_action = fake_action.FakeAction(self.init) - act_comp_res_trans
+        task_comp_res_trans = act_get_comp_res_info >> \
+                              (is_custom_flavors | act_add_custom_flavors | act_fake_action) >> \
+                              act_comp_res_trans
         act_network_trans = networks_transporter.NetworkTransporter(self.init)
-        return act_identity_trans >> task_images_trans >> act_network_trans >> act_comp_res_trans
+        return act_identity_trans >> task_images_trans >> act_network_trans >> task_comp_res_trans
 
     def migrate_images_by_instances(self):
         act_conv_comp_img = convert_compute_to_image.ConvertComputeToImage(self.init, cloud='src_cloud')

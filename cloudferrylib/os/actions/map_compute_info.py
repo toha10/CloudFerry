@@ -21,6 +21,7 @@ DIFF = 'diff'
 
 PATH_DST = 'path_dst'
 HOST_DST = 'host_dst'
+CUSTOM = 'custom'
 
 
 class MapComputeInfo(action.Action):
@@ -41,6 +42,8 @@ class MapComputeInfo(action.Action):
         for instance_id, instance in new_compute_info[utl.INSTANCES_TYPE].iteritems():
             _instance = instance['instance']
             flavor_name = src_flavors_dict[_instance['flavor_id']]
+            if self.src_cloud.cloud_config.migrate.custom_flavors:
+                flavor_name = CUSTOM + "-" + flavor_name
             _instance['flavor_id'] = dst_flavors_dict[flavor_name]
             path_dst = "%s/%s" % (self.dst_cloud.cloud_config.cloud.temp, "temp%s_base" % instance_id)
             instance[DIFF][PATH_DST] = path_dst

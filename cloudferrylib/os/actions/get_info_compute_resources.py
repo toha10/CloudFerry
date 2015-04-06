@@ -18,24 +18,18 @@ import copy
 from cloudferrylib.base.action import action
 from cloudferrylib.utils import utils as utl
 
-
 RESOURCES = "resources"
 
 
-class TransportComputeResources(action.Action):
+class GetInfoComputeResources(action.Action):
 
-    def run(self, info=None, identity_info=None, **kwargs):
-        info_res = copy.deepcopy(info)
+    def __init__(self, init, cloud=None):
+        super(GetInfoComputeResources, self).__init__(init, cloud)
 
-        if not info:
-            src_compute = self.src_cloud.resources[utl.COMPUTE_RESOURCE]
-            info_res = src_compute.read_info(target=RESOURCES)
-
-        dst_compute = self.dst_cloud.resources[utl.COMPUTE_RESOURCE]
-
-        new_info = dst_compute.deploy(info_res, target=RESOURCES,
-                                      identity_info=identity_info)
+    def run(self, **kwargs):
+        compute_resource = self.cloud.resources[utl.COMPUTE_RESOURCE]
+        info = compute_resource.read_info(target=RESOURCES)
 
         return {
-            'info': new_info
+            'info': info
         }

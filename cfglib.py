@@ -111,7 +111,9 @@ migrate_opts = [
                help='True - instances which were booted from image '
                     'will be created with boot_from_volume option after migration '
                     'and their snapshot will be source image, '
-                    'False - do not change instance boot settings')
+                    'False - do not change instance boot settings'),
+    cfg.BoolOpt('custom_flavors', default=False,
+               help='Add custom flavors for destination cloud during the migration')
 ]
 
 mail = cfg.OptGroup(name='mail',
