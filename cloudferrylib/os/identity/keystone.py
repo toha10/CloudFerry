@@ -32,6 +32,7 @@ CSV = '.csv'
 TENANT = 'Tenant'
 USER = 'User'
 PASSWORD = 'Password'
+SERVICES_TENANT_NAME = 'services'
 
 
 class KeystoneIdentity(identity.Identity):
@@ -90,13 +91,17 @@ class KeystoneIdentity(identity.Identity):
                 'users': [],
                 'roles': []}
 
+        service_tenant_id = self.get_tenant_id_by_name(SERVICES_TENANT_NAME)
+
         for tenant in self.get_tenants_list():
-            tnt = self.convert(tenant, self.config)
-            info['tenants'].append(tnt)
+            if tenant.id != service_tenant_id:
+                tnt = self.convert(tenant, self.config)
+                info['tenants'].append(tnt)
 
         for user in self.get_users_list():
-            usr = self.convert(user, self.config)
-            info['users'].append(usr)
+            if user.tenantId != service_tenant_id:
+                usr = self.convert(user, self.config)
+                info['users'].append(usr)
 
         for role in self.get_roles_list():
             rl = self.convert(role, self.config)
