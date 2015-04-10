@@ -136,7 +136,9 @@ migrate_opts = [
     cfg.BoolOpt('skip_down_hosts', default=True,
                 help="If set to True, removes unreachable compute hosts from "
                      "nova hypervisor list. Otherwise migration process fails "
-                     "with unrecoverable error if host is down.")
+                     "with unrecoverable error if host is down."),
+    cfg.BoolOpt('all_networks', default=False,
+                help="Migrate all network resources from all tenants"),
 ]
 
 mail = cfg.OptGroup(name='mail',
