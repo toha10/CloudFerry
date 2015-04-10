@@ -522,8 +522,7 @@ class NovaCompute(compute.Compute):
                     "boot_index": 0
                 }]
                 create_params['image'] = None
-            if self.config.migrate.instance_migration_strategy == SNAPSHOT \
-                    and self.config.migrate.instance_convert_to_bfv:
+            if self.config.migrate.instance_convert_to_bfv:
                 if instance['boot_mode'] == utl.BOOT_FROM_IMAGE:
                     create_params["block_device_mapping_v2"] = [{
                         "source_type": "image",

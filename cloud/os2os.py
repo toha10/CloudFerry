@@ -75,6 +75,7 @@ from cloudferrylib.os.actions import create_snapshot
 from cloudferrylib.os.actions import is_boot_from_volume
 from cloudferrylib.os.actions import get_info_compute_resources
 from cloudferrylib.os.actions import add_custom_flavors
+from cloudferrylib.os.actions import map_bootvol_to_diff
 
 
 class OS2OSFerry(cloud_ferry.CloudFerry):
@@ -339,6 +340,26 @@ class OS2OSFerry(cloud_ferry.CloudFerry):
         return act_map_com_info >> \
                act_net_prep >> \
                act_deploy_instances >> \
+               act_transport_ephemeral
+
+    def migrate_instance_custom(self):
+        act_convert_to_raw = convert_file.ConvertFile(self.init, filetype='disk', cloud='src_cloud')
+        act_map_com_info = map_compute_info.MapComputeInfo(self.init)
+        act_net_prep = prepare_networks.PrepareNetworks(self.init, cloud='dst_cloud')
+        act_deploy_instances = transport_instance.TransportInstance(self.init)
+        act_map_boot_vol_to_diff = map_bootvol_to_diff.MapBootVolToDiff(self.init, cloud='dst_cloud')
+        act_trans_diff_file = task_transfer.TaskTransfer(self.init,
+                                                         'SSHFileToCeph',
+                                                         resource_name=utl.INSTANCES_TYPE,
+                                                         resource_root_name=utl.DIFF_BODY)
+        act_transport_ephemeral = transport_ephemeral.TransportEphemeral(self.init, cloud='dst_cloud')
+
+        return act_convert_to_raw >> \
+               act_map_com_info >> \
+               act_net_prep >> \
+               act_deploy_instances >> \
+               act_map_boot_vol_to_diff >> \
+               act_trans_diff_file >> \
                act_transport_ephemeral
 
     def migrate_process_instance(self):
