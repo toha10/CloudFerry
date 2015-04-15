@@ -32,7 +32,6 @@ CSV = '.csv'
 TENANT = 'Tenant'
 USER = 'User'
 PASSWORD = 'Password'
-SERVICES_TENANT_NAME = 'services'
 
 
 class KeystoneIdentity(identity.Identity):
@@ -91,7 +90,8 @@ class KeystoneIdentity(identity.Identity):
                 'users': [],
                 'roles': []}
 
-        service_tenant_id = self.get_tenant_id_by_name(SERVICES_TENANT_NAME)
+        service_tenant_id = \
+            self.get_tenant_id_by_name(self.config.cloud.service_tenant)
 
         for tenant in self.get_tenants_list():
             if tenant.id != service_tenant_id:
