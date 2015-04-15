@@ -625,11 +625,23 @@ class NovaCompute(compute.Compute):
         else:
             return True
 
-    def wait_for_status(self, id_obj, status, limit_retry=90):
+    def wait_for_status(self, id_obj, status):
+        limit_retry = self.config.compute.wait_for_status_retries
+        retry_interval = self.config.compute.wait_for_status_interval
+        if limit_retry <= 0:
+            LOG.warn("Treating negative or zero config value %s "
+                     "for 'wait_for_status_retries' of compute service."
+                     % limit_retry)
+            limit_retry = 60
+        if retry_interval <= 0:
+            LOG.warn("Treating negative or zero config value %s "
+                     "for 'wait_for_status_interval' of compute service."
+                     % retry_interval)
+            retry_interval = 3
         count = 0
         getter = self.nova_client.servers
         while getter.get(id_obj).status.lower() != status.lower():
-            time.sleep(2)
+            time.sleep(retry_interval)
             count += 1
             if count > limit_retry:
                 raise timeout_exception.TimeoutException(

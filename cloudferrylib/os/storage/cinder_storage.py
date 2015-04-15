@@ -20,6 +20,10 @@ from cinderclient.v1 import client as cinder_client
 from cloudferrylib.base import storage
 from cloudferrylib.utils import mysql_connector
 from cloudferrylib.utils import utils as utl
+from cloudferrylib.utils import timeout_exception
+
+
+LOG = utl.get_log(__name__)
 
 
 AVAILABLE = 'available'
@@ -148,9 +152,27 @@ class CinderStorage(storage.Storage):
     def get_status(self, resource_id):
         return self.cinder_client.volumes.get(resource_id).status
 
-    def wait_for_status(self, resource_id, status, limit_retry=60):
-        while self.get_status(resource_id) != status:
-            time.sleep(1)
+    def wait_for_status(self, id_obj, status):
+        limit_retry = self.config.storage.wait_for_status_retries
+        retry_interval = self.config.storage.wait_for_status_interval
+        if limit_retry <= 0:
+            LOG.warn("Treating negative or zero config value %s "
+                     "for 'wait_for_status_retries' of storage service."
+                     % limit_retry)
+            limit_retry = 60
+        if retry_interval <= 0:
+            LOG.warn("Treating negative or zero config value %s "
+                     "for 'wait_for_status_interval' of storage service."
+                     % retry_interval)
+            retry_interval = 3
+        count = 0
+        getter = self.cinder_client.volumes
+        while getter.get(id_obj).status.lower() != status.lower():
+            time.sleep(retry_interval)
+            count += 1
+            if count > limit_retry:
+                raise timeout_exception.TimeoutException(
+                    getter.get(id_obj).status.lower(), status, "Timeout exp")
 
     def deploy_volumes(self, info):
         new_ids = {}
