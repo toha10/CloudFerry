@@ -214,11 +214,23 @@ class GlanceImage(image.Image):
         new_info['images'].update(empty_image_list)
         return new_info
 
-    def wait_for_status(self, id_res, status, limit_retry=90):
+    def wait_for_status(self, id_res, status):
+        limit_retry = self.config.image.wait_for_status_retries
+        retry_interval = self.config.image.wait_for_status_interval
+        if limit_retry <= 0:
+            LOG.warn("Treating negative or zero config value %s "
+                     "for 'wait_for_status_retries' of image service."
+                     % limit_retry)
+            limit_retry = 60
+        if retry_interval <= 0:
+            LOG.warn("Treating negative or zero config value %s "
+                     "for 'wait_for_status_interval' of image service."
+                     % retry_interval)
+            retry_interval = 3
         count = 0
         getter = self.glance_client.images
         while getter.get(id_res).status.lower() != status.lower():
-            time.sleep(5)
+            time.sleep(retry_interval)
             count += 1
             if count > limit_retry:
                 raise timeout_exception.TimeoutException(

@@ -36,7 +36,7 @@ class Resource(object):
     def restore(self):
         pass
 
-    def wait_for_status(self, id_obj, status, limit_retry=60):
+    def wait_for_status(self, id_obj, status):
         pass
 
     def get_status(self, resource_id):
