@@ -158,7 +158,12 @@ src_compute_opts = [
     cfg.StrOpt('convert_ephemeral_disk', default='qcow2',
                help='convert ephemeral disk to'),
     cfg.StrOpt('host_eph_drv', default='-',
-               help='host ephemeral drive')
+               help='host ephemeral drive'),
+    cfg.IntOpt('wait_for_status_retries', default=60,
+               help='Number of retries for checking nova service object'),
+    cfg.IntOpt('wait_for_status_interval', default=3,
+               help='Time period in seconds between checking status'
+                    'of nova service object')
 ]
 
 
@@ -181,7 +186,12 @@ src_storage_opts = [
     cfg.StrOpt('rbd_pool', default='volumes',
                help='name of pool for volumes in Ceph RBD storage'),
     cfg.StrOpt('snapshot_name_template', default='snapshot-',
-               help='template for creating names of snapshots on storage backend')
+               help='template for creating names of snapshots on storage backend'),
+    cfg.IntOpt('wait_for_status_retries', default=60,
+               help='Number of retries for checking nova service object'),
+    cfg.IntOpt('wait_for_status_interval', default=3,
+               help='Time period in seconds between checking status'
+                    'of nova service object')
 ]
 
 src_image = cfg.OptGroup(name='src_image',
@@ -191,7 +201,12 @@ src_image_opts = [
     cfg.StrOpt('service', default='glance',
                help='name service for images'),
     cfg.StrOpt('backend', default='file',
-               help='backend for images')
+               help='backend for images'),
+    cfg.IntOpt('wait_for_status_retries', default=60,
+               help='Number of retries for checking nova service object'),
+    cfg.IntOpt('wait_for_status_interval', default=3,
+               help='Time period in seconds between checking status'
+                    'of nova service object')
 ]
 
 src_identity = cfg.OptGroup(name='src_identity',
@@ -247,7 +262,12 @@ dst_compute_opts = [
     cfg.StrOpt('convert_ephemeral_disk', default='qcow2',
                help='convert ephemeral disk to'),
     cfg.StrOpt('host_eph_drv', default='-',
-               help='host ephemeral drive')
+               help='host ephemeral drive'),
+    cfg.IntOpt('wait_for_status_retries', default=60,
+               help='Number of retries for checking nova service object'),
+    cfg.IntOpt('wait_for_status_interval', default=3,
+               help='Time period in seconds between checking status'
+                    'of nova service object')
 ]
 
 
@@ -270,7 +290,12 @@ dst_storage_opts = [
     cfg.StrOpt('rbd_pool', default='volumes',
                help='name of pool for volumes in Ceph RBD storage'),
     cfg.StrOpt('snapshot_name_template', default='snapshot-',
-               help='template for creating names of snapshots on storage backend')
+               help='template for creating names of snapshots on storage backend'),
+    cfg.IntOpt('wait_for_status_retries', default=60,
+               help='Number of retries for checking nova service object'),
+    cfg.IntOpt('wait_for_status_interval', default=3,
+               help='Time period in seconds between checking status'
+                    'of nova service object')
 ]
 
 dst_image = cfg.OptGroup(name='dst_image',
@@ -282,7 +307,12 @@ dst_image_opts = [
     cfg.BoolOpt('convert_to_raw', default='True',
                 help='convert to raw images'),
     cfg.StrOpt('backend', default='file',
-               help='backend for images')
+               help='backend for images'),
+    cfg.IntOpt('wait_for_status_retries', default=60,
+               help='Number of retries for checking nova service object'),
+    cfg.IntOpt('wait_for_status_interval', default=3,
+               help='Time period in seconds between checking status'
+                    'of nova service object')
 ]
 
 dst_identity = cfg.OptGroup(name='dst_identity',
