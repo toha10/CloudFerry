@@ -219,6 +219,7 @@ class NeutronNetwork(network.Network):
             'name': snet['name'],
             'id': snet['id'],
             'enable_dhcp': snet['enable_dhcp'],
+            'dns_nameservers': snet['dns_nameservers'],
             'allocation_pools': snet['allocation_pools'],
             'gateway_ip': snet['gateway_ip'],
             'ip_version': snet['ip_version'],
@@ -855,6 +856,7 @@ class NeutronNetwork(network.Network):
                 {
                     'name': snet['name'],
                     'enable_dhcp': snet['enable_dhcp'],
+                    'dns_nameservers': snet['dns_nameservers'],
                     'network_id': network['id'],
                     'cidr': snet['cidr'],
                     'allocation_pools': snet['allocation_pools'],
