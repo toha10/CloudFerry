@@ -114,6 +114,7 @@ class GlanceImage(image.Image):
             'container_format': glance_image.container_format,
             'disk_format': glance_image.disk_format,
             'is_public': glance_image.is_public,
+            'min_ram': glance_image.min_ram,
             'protected': glance_image.protected,
             'resource': resource,
             'properties': ({
@@ -197,6 +198,7 @@ class GlanceImage(image.Image):
                     container_format=gl_image['image']['container_format'],
                     disk_format=gl_image['image']['disk_format'],
                     is_public=gl_image['image']['is_public'],
+                    min_ram=gl_image['image']['min_ram'],
                     protected=gl_image['image']['protected'],
                     size=gl_image['image']['size'],
                     properties=gl_image['image']['properties'],
