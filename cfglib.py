@@ -49,7 +49,8 @@ dst_opts = [
                help='tenant for access to API'),
     cfg.StrOpt('temp', default='-',
                help='temporary directory on controller'),
-
+    cfg.StrOpt('service_tenant', default='services',
+               help='Tenant name for services')
 ]
 
 migrate = cfg.OptGroup(name='migrate',

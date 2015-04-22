@@ -33,7 +33,6 @@ LOCAL = ".local"
 LEN_UUID_INSTANCE = 36
 INTERFACES = "interfaces"
 DEFAULT_QUOTA_VALUE = -1
-SERVICES_TENANT_NAME = 'services'
 SNAPSHOT = 'snapshot'
 
 
@@ -118,9 +117,12 @@ class NovaCompute(compute.Compute):
         return info
 
     def _read_info_quotas_api(self):
+        service_tenant_id = \
+            self.identity.get_tenant_id_by_name(self.config.cloud.service_tenant)
         tenant_ids = [tenant.id for tenant in self.identity.get_tenants_list()
-                      if tenant.name != SERVICES_TENANT_NAME]
-        user_ids = [user.id for user in self.identity.get_users_list()]
+                      if tenant.id != service_tenant_id]
+        user_ids = [user.id for user in self.identity.get_users_list()
+                    if user.tenantId != service_tenant_id]
         project_quotas = list()
         user_quotas = list()
 
