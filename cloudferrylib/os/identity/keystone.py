@@ -177,10 +177,25 @@ class KeystoneIdentity(identity.Identity):
 
         return func
 
+    def get_users_func(self):
+        users = {user.id: user.name for user in
+                 self.get_users_list()}
+
+        def func(user_id):
+            return users.get(user_id, 'admin')
+
+        return func
+
     def get_tenant_id_by_name(self, name):
         for tenant in self.get_tenants_list():
             if tenant.name == name:
                 return tenant.id
+        return None
+
+    def get_user_id_by_name(self, name):
+        for user in self.get_users_list():
+            if user.name == name:
+                return user.id
         return None
 
     def get_tenant_by_name(self, tenant_name):
