@@ -657,7 +657,9 @@ class NeutronNetwork(network.Network):
                     'member': {
                         'protocol_port': member["protocol_port"],
                         'address': member['address'],
-                        'pool_id': dst_pool['id']
+                        'pool_id': dst_pool['id'],
+                        'tenant_id': tenant_id,
+                        'weight': member['weight']
                     }
                 }
                 member['meta']['id'] = \
