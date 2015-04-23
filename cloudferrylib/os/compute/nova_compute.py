@@ -175,6 +175,7 @@ class NovaCompute(compute.Compute):
         instance_host = getattr(instance, 'OS-EXT-SRV-ATTR:host')
 
         get_tenant_name = identity_res.get_tenants_func()
+        get_user_name = identity_res.get_users_func()
 
         security_groups = []
         for security_group in instance.security_groups:
@@ -244,6 +245,8 @@ class NovaCompute(compute.Compute):
                              'tenant_id': instance.tenant_id,
                              'tenant_name': get_tenant_name(
                                  instance.tenant_id),
+                             'user_name': get_user_name(
+                                 instance.user_id),
                              'status': instance.status,
                              'flavor_id': instance.flavor['id'],
                              'image_id': instance.image[
@@ -511,7 +514,6 @@ class NovaCompute(compute.Compute):
             self.nova_client = nova_tenants_clients[instance['tenant_name']]
             create_params = {'name': instance['name'],
                              'flavor': instance['flavor_id'],
-                             'key_name': instance['key_name'],
                              'nics': instance['nics'],
                              'image': instance['image_id']}
             if instance['boot_mode'] == utl.BOOT_FROM_VOLUME:
@@ -537,12 +539,40 @@ class NovaCompute(compute.Compute):
                     }]
                     create_params['image'] = None
             new_id = self.create_instance(**create_params)
+
+            key_name = instance['key_name']
+            user_name = instance['user_name']
+
+            if key_name:
+                self.add_keypair_to_instance(new_id, user_name, key_name)
+
             new_ids[new_id] = instance['id']
         self.nova_client = nova_tenants_clients[self.config['cloud']['tenant']]
         return new_ids
 
     def create_instance(self, **kwargs):
         return self.nova_client.servers.create(**kwargs).id
+
+    def add_keypair_to_instance(self, instance_id, user_name, key_name):
+        user_id = self.identity.get_user_id_by_name(user_name)
+        keypairs_info = self._read_info_keypairs()
+        update_cmd = ("UPDATE instances SET key_name='%s', "
+                      "key_data='%s' WHERE uuid='%s'")
+
+        for keypair_info in keypairs_info:
+            keypair = keypair_info['keypair']
+            if user_id == keypair['user_id']:
+                if key_name == keypair['name']:
+                    self.mysql_connector.execute(update_cmd % (
+                        keypair['name'],
+                        keypair['public_key'],
+                        instance_id
+                    ))
+                    return None
+
+        LOG.warn("Can't find key_pair for instance_id = %s "
+                 "by user_id = %s and keypair name = %s."
+                 % (instance_id, user_id, key_name))
 
     def get_instances_list(self, detailed=True, search_opts=None,
                            marker=None,
