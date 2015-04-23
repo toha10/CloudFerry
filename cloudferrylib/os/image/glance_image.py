@@ -104,6 +104,8 @@ class GlanceImage(image.Image):
         :param glance_image:    Direct OS Glance image object to convert,
         :param cloud:           Cloud object.
         """
+        identity_res = cloud.resources[utl.IDENTITY_RESOURCE]
+        get_tenant_name = identity_res.get_tenants_func()
 
         resource = cloud.resources[utl.IMAGE_RESOURCE]
         gl_image = {
@@ -114,6 +116,7 @@ class GlanceImage(image.Image):
             'container_format': glance_image.container_format,
             'disk_format': glance_image.disk_format,
             'is_public': glance_image.is_public,
+            'owner_name': get_tenant_name(glance_image.owner),
             'min_ram': glance_image.min_ram,
             'protected': glance_image.protected,
             'resource': resource,
@@ -193,11 +196,14 @@ class GlanceImage(image.Image):
                     migrate_images_list.append(
                         (dst_img_checksums[checksum_current], meta))
                     continue
+                tenant_id = \
+                    self.identity_client.get_tenant_id_by_name(gl_image['image']['owner_name'])
                 migrate_image = self.create_image(
                     name=gl_image['image']['name'],
                     container_format=gl_image['image']['container_format'],
                     disk_format=gl_image['image']['disk_format'],
                     is_public=gl_image['image']['is_public'],
+                    owner=tenant_id,
                     min_ram=gl_image['image']['min_ram'],
                     protected=gl_image['image']['protected'],
                     size=gl_image['image']['size'],
