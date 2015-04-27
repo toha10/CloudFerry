@@ -68,6 +68,9 @@ migrate_opts = [
                help='yes - migrate external networks, no - do not migrate external networks'),
     cfg.BoolOpt('keep_floatingip', default=False,
                help='yes - keep floatingip, no - not keep floatingip'),
+    cfg.BoolOpt('set_ext_gateways', default=False,
+               help='yes - Gateways to public network will be assigned to routers during migration,'
+                    'no - Gateways to public network will not be assigned'),
     cfg.BoolOpt('keep_lbaas', default=False,
                help='yes - keep lbaas settings, no - not keep lbaas settings'),
     cfg.BoolOpt('keep_volume_snapshots', default=False,

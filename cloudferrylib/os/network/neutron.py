@@ -888,7 +888,8 @@ class NeutronNetwork(network.Network):
                 self.identity_client.get_tenant_id_by_name(tname)
             r_info = {'router': {'name': router['name'],
                                  'tenant_id': tenant_id}}
-            if router['external_gateway_info']:
+            if router['external_gateway_info'] and \
+                    self.config.migrate.set_ext_gateways:
                 ex_net_hash = \
                     self.get_res_hash_by_id(networks, router['ext_net_id'])
                 ex_net_id = \
