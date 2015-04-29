@@ -122,7 +122,7 @@ class NovaCompute(compute.Compute):
         tenant_ids = [tenant.id for tenant in self.identity.get_tenants_list()
                       if tenant.id != service_tenant_id]
         user_ids = [user.id for user in self.identity.get_users_list()
-                    if user.tenantId != service_tenant_id]
+                    if not self.identity.roles_for_user(user.id, service_tenant_id)]
         project_quotas = list()
         user_quotas = list()
 
