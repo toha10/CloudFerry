@@ -34,7 +34,9 @@ class NovaNetwork(network.Network):
             self.config.cloud.user,
             self.config.cloud.password,
             self.config.cloud.tenant,
-            self.config.cloud.auth_url)
+            self.config.cloud.auth_url,
+            insecure=self.config.cloud.insecure_ssl
+        )
 
     def read_info(self, opts=None):
         opts = {} if not opts else opts

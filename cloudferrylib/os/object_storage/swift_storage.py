@@ -35,7 +35,8 @@ class SwiftStorage(objstorage.ObjStorage):
                                        key=params.password,
                                        tenant_name=params.tenant,
                                        authurl=params.auth_url,
-                                       auth_version="2")
+                                       auth_version="2",
+                                       insecure=params.insecure_ssl)
         return conn.get_auth()
 
     def read_info(self, **kwargs):
