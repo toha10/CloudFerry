@@ -70,6 +70,9 @@ migrate_opts = [
                help='yes - keep ip, no - not keep ip'),
     cfg.BoolOpt('migrate_extnets', default=False,
                help='yes - migrate external networks, no - do not migrate external networks'),
+    cfg.BoolOpt('use_extnet_spec_opts', default=False,
+               help='yes - use special options for external networks,'
+                    'no - do not use special options for external networks.'),
     cfg.BoolOpt('keep_floatingip', default=False,
                help='yes - keep floatingip, no - not keep floatingip'),
     cfg.BoolOpt('set_ext_gateways', default=False,
