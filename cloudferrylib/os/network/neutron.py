@@ -828,13 +828,14 @@ class NeutronNetwork(network.Network):
                     continue
                 network_info['network']['router:external'] = \
                     net['router:external']
-                network_info['network']['provider:physical_network'] = \
-                    net['provider:physical_network']
-                network_info['network']['provider:network_type'] = \
-                    net['provider:network_type']
-                if net['provider:network_type'] == 'vlan':
-                    network_info['network']['provider:segmentation_id'] = \
-                        net['provider:segmentation_id']
+                if self.config.migrate.use_extnet_spec_opts:
+                    network_info['network']['provider:physical_network'] = \
+                        net['provider:physical_network']
+                    network_info['network']['provider:network_type'] = \
+                        net['provider:network_type']
+                    if net['provider:network_type'] == 'vlan':
+                        network_info['network']['provider:segmentation_id'] = \
+                            net['provider:segmentation_id']
             if net['res_hash'] not in existing_nets_hashlist:
                 net['meta']['id'] = self.neutron_client.\
                     create_network(network_info)['network']['id']
