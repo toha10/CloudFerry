@@ -24,20 +24,19 @@ class SwiftStorage(objstorage.ObjStorage):
         super(SwiftStorage, self).__init__()
         self.config = config
         self.cloud = cloud
-        self.storage_url, self.token = self.get_swift_conn()
+        self.swift_conn = self.get_swift_conn()
 
     def get_swift_conn(self, params=None):
         """Getting nova client. """
         if params is None:
             params = self.config.cloud
 
-        conn = swift_client.Connection(user=params.user,
+        return swift_client.Connection(user=params.user,
                                        key=params.password,
                                        tenant_name=params.tenant,
                                        authurl=params.auth_url,
                                        auth_version="2",
                                        insecure=params.insecure_ssl)
-        return conn.get_auth()
 
     def read_info(self, **kwargs):
         info = {utl.OBJSTORAGE_RESOURCE:
@@ -62,33 +61,19 @@ class SwiftStorage(objstorage.ObjStorage):
         return info
 
     def get_account_info(self):
-        return swift_client.get_account(self.storage_url, self.token)
+        return self.swift_conn.get_account()
 
     def get_container(self, container, *args):
-        return swift_client.get_container(self.storage_url, self.token, container, *args)
+        return self.swift_conn.get_container(container, *args)
 
     def get_object(self, container, obj_name, *args):
-        return swift_client.get_object(self.storage_url, self.token, container, obj_name, *args)
+        return self.swift_conn.get_object(container, obj_name, *args)
 
     def put_object(self, container, obj_name, content=None, content_type=None, *args):
-        return swift_client.put_object(self.storage_url, self.token, container, obj_name, content, content_type, *args)
+        return self.swift_conn.put_object(container, obj_name, content, content_type, *args)
 
     def put_container(self, container, *args):
-        return swift_client.put_container(self.storage_url, self.token, container, *args)
+        return self.swift_conn.put_container(container, *args)
 
     def delete_container(self, container, *args):
-        return swift_client.delete_container(self.storage_url, self.token, container)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return self.swift_conn.delete_container(container, *args)
