@@ -72,12 +72,12 @@ class NeutronNetwork(network.Network):
         self.upload_networks(deploy_info['networks'])
         self.upload_subnets(deploy_info['networks'],
                             deploy_info['subnets'])
-        self.upload_routers(deploy_info['networks'],
-                            deploy_info['subnets'],
-                            deploy_info['routers'])
         if self.config.migrate.keep_floatingip:
             self.upload_floatingips(deploy_info['networks'],
                                     deploy_info['floating_ips'])
+        self.upload_routers(deploy_info['networks'],
+                            deploy_info['subnets'],
+                            deploy_info['routers'])
         self.upload_neutron_security_groups(deploy_info['security_groups'])
         self.upload_sec_group_rules(deploy_info['security_groups'])
         if self.config.migrate.keep_lbaas:
