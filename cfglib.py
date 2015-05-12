@@ -152,6 +152,8 @@ src_mysql_opts = [
                help='password for mysql'),
     cfg.StrOpt('host', default='-',
                help='host of mysql'),
+    cfg.IntOpt('port', default='3306',
+               help='port for mysql connection'),
     cfg.StrOpt('connection', default='mysql+mysqlconnector',
                help='driver for connection'),
 ]
@@ -256,6 +258,8 @@ dst_mysql_opts = [
                help='password for mysql'),
     cfg.StrOpt('host', default='-',
                help='host of mysql'),
+    cfg.IntOpt('port', default='3306',
+               help='port for mysql connection'),
     cfg.StrOpt('connection', default='mysql+mysqlconnector',
                help='driver for connection'),
 ]
