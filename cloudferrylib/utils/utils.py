@@ -481,7 +481,7 @@ def get_ext_ip(ext_cidr, init_host, compute_host):
 def check_file(file_path):
     return os.path.isfile(file_path)
 
-def get_filter_config(file_path):
+def get_opt_config(file_path):
     if check_file(file_path):
         return yaml.load(open(file_path, 'r'))
     else:
