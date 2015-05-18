@@ -68,6 +68,10 @@ migrate_opts = [
                help='name pub key'),
     cfg.BoolOpt('keep_ip', default=False,
                help='yes - keep ip, no - not keep ip'),
+    cfg.BoolOpt('disable_dhcp', default=False,
+               help='yes - disable_dhcp before port creation '
+                    'to avoid DHCP taking IP used by an instance, '
+                    'no - do not disable_dhcp before port creation '),
     cfg.BoolOpt('migrate_extnets', default=False,
                help='yes - migrate external networks, no - do not migrate external networks'),
     cfg.StrOpt('ext_net_map', default='configs/ext_net_map.yaml',
