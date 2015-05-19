@@ -14,11 +14,13 @@
 
 
 import copy
+from operator import attrgetter
 import time
 from sqlalchemy import exc
 
 from novaclient.v1_1 import client as nova_client
 
+import cfglib
 from cloudferrylib.base import compute
 from cloudferrylib.utils import mysql_connector
 from cloudferrylib.utils import timeout_exception
@@ -34,6 +36,8 @@ LEN_UUID_INSTANCE = 36
 INTERFACES = "interfaces"
 DEFAULT_QUOTA_VALUE = -1
 SNAPSHOT = 'snapshot'
+
+INSTANCE_HOST_ATTRIBUTE = 'OS-EXT-SRV-ATTR:host'
 
 
 class NovaCompute(compute.Compute):
@@ -179,7 +183,7 @@ class NovaCompute(compute.Compute):
         compute_res = cloud.resources[utl.COMPUTE_RESOURCE]
 
         instance_name = getattr(instance, "OS-EXT-SRV-ATTR:instance_name")
-        instance_host = getattr(instance, 'OS-EXT-SRV-ATTR:host')
+        instance_host = getattr(instance, INSTANCE_HOST_ATTRIBUTE)
 
         get_tenant_name = identity_res.get_tenants_func()
         get_user_name = identity_res.get_users_func()
@@ -584,14 +588,20 @@ class NovaCompute(compute.Compute):
                            limit=None):
         ids = search_opts.get('id', None) if search_opts else None
         if not ids:
-            return self.nova_client.servers.list(detailed=detailed,
-                                                 search_opts=search_opts,
-                                                 marker=marker, limit=limit)
+            instances = self.nova_client.servers.list(
+                detailed=detailed, search_opts=search_opts, marker=marker,
+                limit=limit)
         else:
             if type(ids) is list:
-                return [self.nova_client.servers.get(i) for i in ids]
+                instances = [self.nova_client.servers.get(i) for i in ids]
             else:
-                return [self.nova_client.servers.get(ids)]
+                instances = [self.nova_client.servers.get(ids)]
+
+        instances = filter_down_hosts(
+            down_hosts(self.get_client()), instances,
+            hostname_attribute=INSTANCE_HOST_ATTRIBUTE)
+
+        return instances
 
     def get_instance(self, instance_id):
         return self.get_instances_list(search_opts={'id': instance_id})[0]
@@ -763,3 +773,19 @@ class NovaCompute(compute.Compute):
 
     def create_snapshot(self, instance_id, snapshot_name, metadata=None):
         return self.nova_client.servers.create_image(instance_id, snapshot_name, metadata)
+
+
+def down_hosts(novaclient):
+    services = novaclient.services.list()
+    return set(map(attrgetter('host'),
+                   filter(lambda h: h.state != 'up', services)))
+
+
+def filter_down_hosts(hosts_down, elements, hostname_attribute=''):
+    """Removes elements which run on hosts in down state according to nova
+    service-list"""
+    if cfglib.CONF.migrate.skip_down_hosts:
+        elements = filter(
+            lambda e: getattr(e, hostname_attribute, e) not in hosts_down,
+            elements)
+    return elements
