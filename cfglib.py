@@ -132,7 +132,11 @@ migrate_opts = [
                     'and their snapshot will be source image, '
                     'False - do not change instance boot settings'),
     cfg.BoolOpt('custom_flavors', default=False,
-               help='Add custom flavors for destination cloud during the migration')
+               help='Add custom flavors for destination cloud during the migration'),
+    cfg.BoolOpt('skip_down_hosts', default=True,
+                help="If set to True, removes unreachable compute hosts from "
+                     "nova hypervisor list. Otherwise migration process fails "
+                     "with unrecoverable error if host is down.")
 ]
 
 mail = cfg.OptGroup(name='mail',
