@@ -108,8 +108,7 @@ class NovaCompute(compute.Compute):
         info['keypairs'] = self._read_info_keypairs()
 
         for flavor in self.get_flavor_list(is_public=None):
-            info['flavors'][flavor.id] = self.convert(self.nova_client,
-                                                      flavor, cloud=self.cloud)
+            info['flavors'][flavor.id] = self.convert(flavor, cloud=self.cloud)
 
         if self.config.migrate.migrate_quotas:
             info['project_quotas'], info['user_quotas'] = \
@@ -129,12 +128,12 @@ class NovaCompute(compute.Compute):
 
         for tenant_id in tenant_ids:
             project_quota = self.get_quotas(tenant_id=tenant_id)
-            project_quota_info = self.convert(self.nova_client, project_quota)
+            project_quota_info = self.convert(project_quota)
             project_quota_info['tenant_id'] = tenant_id
             project_quotas.append(project_quota_info)
             for user_id in user_ids:
                 user_quota = self.get_quotas(tenant_id=tenant_id, user_id=user_id)
-                user_quota_info = self.convert(self.nova_client, user_quota)
+                user_quota_info = self.convert(user_quota)
                 user_quota_info['tenant_id'] = tenant_id
                 user_quota_info['user_id'] = user_id
                 user_quotas.append(user_quota_info)
@@ -161,15 +160,14 @@ class NovaCompute(compute.Compute):
 
         for instance in self.get_instances_list(search_opts=search_opts):
             if instance.status != 'ERROR':
-                info['instances'][instance.id] = self.convert(self.nova_client,
-                                                              instance,
+                info['instances'][instance.id] = self.convert(instance,
                                                               self.config,
                                                               self.cloud)
 
         return info
 
     @staticmethod
-    def convert_instance(client, instance, cfg, cloud):
+    def convert_instance(instance, cfg, cloud):
         identity_res = cloud.resources[utl.IDENTITY_RESOURCE]
         compute_res = cloud.resources[utl.COMPUTE_RESOURCE]
 
@@ -239,7 +237,7 @@ class NovaCompute(compute.Compute):
                 instance_block_info,
                 is_ceph_ephemeral=is_ceph)
 
-        disk_size = client.flavors.get(instance.flavor['id']).disk
+        disk_size = compute_res.get_flavor_from_id(instance.flavor['id']).disk
 
         inst = {'instance': {'name': instance.name,
                              'instance_name': instance_name,
@@ -314,12 +312,12 @@ class NovaCompute(compute.Compute):
                     'meta': {}}
 
     @staticmethod
-    def convert(client, obj, cfg=None, cloud=None):
+    def convert(obj, cfg=None, cloud=None):
         res_tuple = (nova_client.flavors.Flavor,
                      nova_client.quotas.QuotaSet)
 
         if isinstance(obj, nova_client.servers.Server):
-            return NovaCompute.convert_instance(client, obj, cfg, cloud)
+            return NovaCompute.convert_instance(obj, cfg, cloud)
         elif isinstance(obj, res_tuple):
             return NovaCompute.convert_resources(obj, cloud)
 
