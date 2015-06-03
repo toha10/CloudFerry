@@ -53,7 +53,8 @@ class GlanceImage(image.Image):
             'glance')
         return glance_client.Client(
             endpoint=endpoint_glance,
-            token=self.identity_client.get_auth_token_from_user())
+            token=self.identity_client.get_auth_token_from_user(),
+            insecure=self.config.cloud.insecure_ssl)
 
     def get_image_list(self):
         return self.glance_client.images.list()
