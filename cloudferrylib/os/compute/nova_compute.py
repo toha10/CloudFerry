@@ -81,18 +81,25 @@ class NovaCompute(compute.Compute):
                  'meta': {}})
 
     def _read_info_keypairs(self):
+
+        service_tenant_id = \
+            self.identity.get_tenant_id_by_name(self.config.cloud.service_tenant)
+        user_ids = [user.id for user in self.identity.get_users_list()
+                    if not self.identity.roles_for_user(user.id, service_tenant_id)]
+
         keypairs_cmd = ("SELECT name, user_id, fingerprint, "
                         "public_key FROM key_pairs WHERE "
                         "deleted = 0")
         keypairs_info = []
 
         for keypair in self.mysql_connector.execute(keypairs_cmd):
-            keypairs_info.append(
-                {'keypair': {'name': keypair[0],
-                             'user_id': keypair[1],
-                             'fingerprint': keypair[2],
-                             'public_key': keypair[3]},
-                 'meta': {}})
+            if keypair[1] in user_ids:
+                keypairs_info.append(
+                    {'keypair': {'name': keypair[0],
+                                 'user_id': keypair[1],
+                                 'fingerprint': keypair[2],
+                                 'public_key': keypair[3]},
+                     'meta': {}})
 
         return keypairs_info
 
