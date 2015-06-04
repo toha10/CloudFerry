@@ -262,7 +262,7 @@ class NeutronNetwork(network.Network):
             'name': router['name'],
             'id': router['id'],
             'admin_state_up': router['admin_state_up'],
-            'routes': router['routes'],
+            'routes': router.get('routes', None),
             'external_gateway_info': router['external_gateway_info'],
             'tenant_name': get_tenant_name(router['tenant_id']),
             'ips': ips,
