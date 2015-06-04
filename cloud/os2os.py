@@ -189,7 +189,7 @@ class OS2OSFerry(cloud_ferry.CloudFerry):
 
         act_inst_vol_transport_data = task_transfer.TaskTransfer(self.init,
                                                                  'SSHCephToCeph',
-                                                                 input_info='storage_info')
+                                                                 input_info='storage_info') - act_convert_v_to_c
 
         act_deploy_snapshots = deploy_snapshots.DeployVolSnapshots(self.init, cloud='dst_cloud') - act_convert_v_to_c
 
