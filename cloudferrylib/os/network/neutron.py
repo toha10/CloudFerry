@@ -191,9 +191,9 @@ class NeutronNetwork(network.Network):
             'tenant_name': get_tenant_name(net['tenant_id']),
             'subnet_names': subnet_names,
             'router:external': net['router:external'],
-            'provider:physical_network': net['provider:physical_network'],
-            'provider:network_type': net['provider:network_type'],
-            'provider:segmentation_id': net['provider:segmentation_id'],
+            'provider:physical_network': net.get('provider:physical_network', None),
+            'provider:network_type': net.get('provider:network_type', None),
+            'provider:segmentation_id': net.get('provider:segmentation_id', None),
             'meta': {},
         }
 
