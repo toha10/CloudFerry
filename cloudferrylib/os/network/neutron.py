@@ -364,8 +364,7 @@ class NeutronNetwork(network.Network):
 
         res_hash = net_res.get_resource_hash(result,
                                              'name',
-                                             'tenant_name',
-                                             'description')
+                                             'tenant_name')
 
         result['res_hash'] = res_hash
 
