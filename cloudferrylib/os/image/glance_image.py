@@ -29,6 +29,7 @@ from cloudferrylib.utils import timeout_exception
 
 
 LOG = utl.get_log(__name__)
+ACTIVE = 'active'
 
 
 class GlanceImage(image.Image):
@@ -169,11 +170,15 @@ class GlanceImage(image.Image):
 
     def make_image_info(self, glance_image, info):
         if glance_image:
-            gl_image = self.convert(glance_image, self.cloud)
+            if glance_image.status == ACTIVE:
+                gl_image = self.convert(glance_image, self.cloud)
 
-            info['images'][glance_image.id] = {'image': gl_image,
-                                               'meta': {},
-                                               }
+                info['images'][glance_image.id] = {'image': gl_image,
+                                                   'meta': {},
+                                                   }
+            else:
+                LOG.warn('Image with id = %s is not in ACTIVE state, '
+                         'will be skipped' % glance_image.id)
         else:
             LOG.error('Image has not been found')
 
