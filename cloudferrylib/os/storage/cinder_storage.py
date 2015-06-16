@@ -222,6 +222,7 @@ class CinderStorage(storage.Storage):
             'device': vol.attachments[0][
                 'device'] if vol.attachments else None,
             'bootable': False,
+            'snapshot_id': vol.snapshot_id,
             'volume_image_metadata': {},
             'host': None,
             'path': None

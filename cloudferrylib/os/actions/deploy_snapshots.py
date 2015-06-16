@@ -34,7 +34,7 @@ class DeployVolSnapshots(action.Action):
         storage_info.update(identity_info)
         volume_resource = self.cloud.resources[utl.STORAGE_RESOURCE]
         for vol_id, vol in deploy_info[utl.VOLUMES_TYPE].iteritems():
-            if vol['snapshots']:
+            if vol['snapshots'] and not vol[utl.VOLUME_BODY]['snapshot_id']:
 
                 vol_info = vol[utl.VOLUME_BODY]
 

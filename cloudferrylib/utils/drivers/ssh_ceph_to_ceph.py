@@ -33,11 +33,21 @@ class SSHCephToCeph(driver_transporter.DriverTransporter):
                     else self.src_cloud.getIpSsh())
         host_dst = (data.get('host_dst') if data.get('host_dst')
                     else self.dst_cloud.getIpSsh())
-        with settings(host_string=host_src), utils.forward_agent(
-                env.key_filename):
 
+        ssh_cmd = cmd_cfg.ssh_cmd
+
+        if data.get('snapshot_id'):
+            action_utils.delete_file_from_rbd(host_dst, data['path_dst'])
+            rbd_import = rbd_util.RbdUtil.rbd_import_cmd
+            rbd_export = rbd_util.RbdUtil.rbd_export_cmd
+            ssh_rbd_import = ssh_cmd(host_dst, rbd_import)
+
+            process = rbd_export >> ssh_rbd_import
+            process = process(data['path_src'], '-', '2', '-',
+                              data['path_dst'])
+
+        else:
             rbd_import_diff = rbd_util.RbdUtil.rbd_import_diff_cmd
-            ssh_cmd = cmd_cfg.ssh_cmd
             ssh_rbd_import_diff = ssh_cmd(host_dst, rbd_import_diff)
 
             if snapshot:
@@ -57,5 +67,8 @@ class SSHCephToCeph(driver_transporter.DriverTransporter):
 
             process = rbd_export_diff >> ssh_rbd_import_diff
             process = process(*process_params)
+
+        with settings(host_string=host_src), utils.forward_agent(
+                env.key_filename):
 
             self.src_cloud.ssh_util.execute(process)
