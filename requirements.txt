@@ -13,3 +13,4 @@ python-novaclient==2.15.0
 python-swiftclient==2.3.1
 sqlalchemy
 pyyaml
+oslo.config==1.15.0
