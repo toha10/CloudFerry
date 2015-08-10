@@ -29,10 +29,14 @@ FAKE_CONFIG = utils.ext_dict(
     cloud=utils.ext_dict({'user': 'fake_user',
                           'password': 'fake_password',
                           'tenant': 'fake_tenant',
-                          'auth_url': 'http://1.1.1.1:35357/v2.0/'}),
+                          'auth_url': 'http://1.1.1.1:35357/v2.0/',
+                          'insecure_ssl': True,
+                          'service_tenant': 'services'}),
     migrate=utils.ext_dict({'speed_limit': '10MB',
                             'retry': '7',
-                            'time_wait': 5}))
+                            'time_wait': 5,
+                            'ext_net_map': 'fake_ext_net_map_file',
+                            'set_ext_gateways': True}))
 
 
 class NeutronTestCase(test.TestCase):
@@ -93,6 +97,7 @@ class NeutronTestCase(test.TestCase):
         self.subnet_1_info = {'name': 'fake_subnet_name_1',
                               'id': 'fake_subnet_id_1',
                               'enable_dhcp': True,
+                              'dns_nameservers': 'fake_dns_servers_1',
                               'allocation_pools': [{'start': 'fake_start_ip_1',
                                                     'end': 'fake_end_ip_1'}],
                               'gateway_ip': 'fake_gateway_ip_1',
@@ -108,6 +113,7 @@ class NeutronTestCase(test.TestCase):
         self.subnet_2_info = {'name': 'fake_subnet_name_2',
                               'id': 'fake_subnet_id_2',
                               'enable_dhcp': True,
+                              'dns_nameservers': 'fake_dns_servers_2',
                               'allocation_pools': [{'start': 'fake_start_ip_2',
                                                     'end': 'fake_end_ip_2'}],
                               'gateway_ip': 'fake_gateway_ip_2',
@@ -142,7 +148,8 @@ class NeutronTestCase(test.TestCase):
             username='fake_user',
             password='fake_password',
             tenant_name='fake_tenant',
-            auth_url='http://1.1.1.1:35357/v2.0/'
+            auth_url='http://1.1.1.1:35357/v2.0/',
+            insecure=True
         )
         self.assertEqual(self.neutron_mock_client(), client)
 
@@ -176,6 +183,7 @@ class NeutronTestCase(test.TestCase):
         fake_subnets_list = {
             'subnets': [{'name': 'fake_subnet_name_1',
                          'enable_dhcp': True,
+                         'dns_nameservers': 'fake_dns_servers_1',
                          'network_id': 'fake_network_id_1',
                          'tenant_id': 'fake_tenant_id_1',
                          'allocation_pools': [
@@ -494,6 +502,7 @@ class NeutronTestCase(test.TestCase):
                        'enable_dhcp': True,
                        'network_id': 'fake_network_id_1',
                        'cidr': 'fake_cidr_2',
+                       'dns_nameservers': 'fake_dns_servers_2',
                        'allocation_pools': [{'start': 'fake_start_ip_2',
                                              'end': 'fake_end_ip_2'}],
                        'gateway_ip': 'fake_gateway_ip_2',

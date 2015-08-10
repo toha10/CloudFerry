@@ -27,6 +27,7 @@ FAKE_CONFIG = utils.ext_dict(cloud=utils.ext_dict({'user': 'fake_user',
                                                    'password': 'fake_password',
                                                    'tenant': 'fake_tenant',
                                                    'host': '1.1.1.1',
+                                                   'insecure_ssl': True
                                                    }),
                              migrate=utils.ext_dict({'speed_limit': '10MB',
                                                      'retry': '7',
@@ -58,11 +59,13 @@ class GlanceImageTestCase(test.TestCase):
         self.fake_image_1 = mock.Mock()
         self.fake_image_1.id = 'fake_image_id_1'
         self.fake_image_1.name = 'fake_image_name_1'
-        self.fake_image_1.status = 'fake_status_1'
+        self.fake_image_1.status = 'active'
         self.fake_image_1.checksum = 'fake_shecksum_1'
         self.fake_image_1.container_format = 'bare'
         self.fake_image_1.disk_format = 'qcow2'
         self.fake_image_1.is_public = True
+        self.fake_image_1.owner = 'fake_owner_id'
+        self.fake_image_1.min_ram = 0
         self.fake_image_1.protected = False
         self.fake_image_1.size = 1024
         self.fake_image_1.properties = 'fake_properties'
@@ -79,6 +82,8 @@ class GlanceImageTestCase(test.TestCase):
                                               'disk_format': 'qcow2',
                                               'id': 'fake_image_id_1',
                                               'is_public': True,
+                                              'owner_name': 'fake_owner',
+                                              'min_ram': 0,
                                               'name': 'fake_image_name_1',
                                               'protected': False,
                                               'size': 1024,
@@ -86,6 +91,9 @@ class GlanceImageTestCase(test.TestCase):
                                               'properties': 'fake_properties'},
                                     'meta': {}}},
         }
+
+    def fake_tenants_func(*args):
+            return 'fake_owner'
 
     def test_get_glance_client(self):
         fake_endpoint = 'fake_endpoint'
@@ -96,7 +104,7 @@ class GlanceImageTestCase(test.TestCase):
             fake_auth_token)
 
         gl_client = self.glance_image.get_client()
-        mock_calls = [mock.call(endpoint=fake_endpoint, token=fake_auth_token)]
+        mock_calls = [mock.call(endpoint=fake_endpoint, token=fake_auth_token, insecure=True)]
 
         self.glance_mock_client.assert_has_calls(mock_calls)
         self.assertEqual(self.glance_mock_client(), gl_client)
@@ -172,6 +180,7 @@ class GlanceImageTestCase(test.TestCase):
                               'fake_image_id_1'))
 
     def test_make_image_info(self):
+        self.identity_mock.get_tenants_func.return_value = self.fake_tenants_func
         info = self.glance_image.make_image_info(self.fake_image_1,
                                                  self.fake_input_info)
 
@@ -186,6 +195,7 @@ class GlanceImageTestCase(test.TestCase):
     def test_read_info_id(self):
         fake_images = [self.fake_image_1, self.fake_image_2]
         self.glance_mock_client().images.list.return_value = fake_images
+        self.identity_mock.get_tenants_func.return_value = self.fake_tenants_func
 
         info = self.glance_image.read_info(image_id='fake_image_id_1')
         self.assertEqual(self.fake_result_info, info)
@@ -193,6 +203,7 @@ class GlanceImageTestCase(test.TestCase):
     def test_read_info_name(self):
         fake_images = [self.fake_image_1, self.fake_image_2]
         self.glance_mock_client().images.list.return_value = fake_images
+        self.identity_mock.get_tenants_func.return_value = self.fake_tenants_func
 
         info = self.glance_image.read_info(image_name='fake_image_name_1')
         self.assertEqual(self.fake_result_info, info)
@@ -200,6 +211,7 @@ class GlanceImageTestCase(test.TestCase):
     def test_read_info_list(self):
         fake_images = [self.fake_image_1, self.fake_image_2]
         self.glance_mock_client().images.list.return_value = fake_images
+        self.identity_mock.get_tenants_func.return_value = self.fake_tenants_func
 
         info = self.glance_image.read_info(images_list=['fake_image_name_1'])
         self.assertEqual(self.fake_result_info, info)
@@ -207,6 +219,7 @@ class GlanceImageTestCase(test.TestCase):
     def test_read_info_default(self):
         fake_images = [self.fake_image_1]
         self.glance_mock_client().images.list.return_value = fake_images
+        self.identity_mock.get_tenants_func.return_value = self.fake_tenants_func
 
         info = self.glance_image.read_info()
         self.assertEqual(self.fake_result_info, info)
@@ -214,6 +227,8 @@ class GlanceImageTestCase(test.TestCase):
     @mock.patch('cloudferrylib.os.image.glance_image.copy.deepcopy')
     @mock.patch('cloudferrylib.utils.file_like_proxy.FileLikeProxy')
     def test_deploy(self, mock_proxy, mock_copy):
+        self.identity_mock.get_endpoint_by_service_name.return_value = 'fake_endpoint'
+        self.identity_mock.get_tenants_func.return_value = self.fake_tenants_func
         mock_copy.return_value = self.fake_result_info
         self.glance_mock_client().images.create.return_value = (
             self.fake_image_1)
