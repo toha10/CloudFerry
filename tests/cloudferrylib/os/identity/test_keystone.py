@@ -29,6 +29,7 @@ FAKE_CONFIG = utils.ext_dict(
                           'password': 'fake_password',
                           'tenant': 'fake_tenant',
                           'auth_url': 'http://1.1.1.1:35357/v2.0/',
+                          'insecure_ssl': True,
                           'service_tenant': 'services'}),
     migrate=utils.ext_dict({'speed_limit': '10MB',
                             'retry': '7',
@@ -63,11 +64,13 @@ class KeystoneIdentityTestCase(test.TestCase):
         self.fake_user_0 = mock.Mock(spec=keystone_client.users.User)
         self.fake_user_0.name = 'user_name_0'
         self.fake_user_0.id = 'user_id_0'
+        self.fake_user_0.enabled = True
         self.fake_user_0.tenantId = self.fake_tenant_0.id
         self.fake_user_0.email = 'user0@fake.com'
         self.fake_user_1 = mock.Mock(spec=keystone_client.users.User)
         self.fake_user_1.name = 'user_name_1'
         self.fake_user_1.id = 'user_id_1'
+        self.fake_user_1.enabled = True
         self.fake_user_1.tenantId = self.fake_tenant_1.id
         self.fake_user_1.email = 'user1@fake.com'
 
@@ -97,8 +100,10 @@ class KeystoneIdentityTestCase(test.TestCase):
         mock_calls = [
             mock.call(username='fake_user', tenant_name='fake_tenant',
                       password='fake_password',
-                      auth_url='http://1.1.1.1:35357/v2.0/'),
-            mock.call(token='fake_id', endpoint='http://1.1.1.1:35357/v2.0/')]
+                      auth_url='http://1.1.1.1:35357/v2.0/',
+                      insecure=True),
+            mock.call(token='fake_id', endpoint='http://1.1.1.1:35357/v2.0/',
+                      insecure=True)]
         self.mock_client.assert_has_calls(mock_calls)
         self.assertEqual(self.mock_client(), client)
 
@@ -273,7 +278,9 @@ class KeystoneIdentityTestCase(test.TestCase):
 
     def test_read_info(self):
         fake_tenants_list = [self.fake_tenant_0, self.fake_tenant_1]
-        fake_users_list = [self.fake_user_0, self.fake_user_1]
+        # we will get empty users list, because read_info method checks
+        # user roles in service tenant and if it has we exclude user from users list
+        fake_users_list = []
         fake_roles_list = [self.fake_role_0, self.fake_role_1]
         fake_info = self._get_fake_info(fake_tenants_list, fake_users_list,
                                         fake_roles_list)
@@ -357,8 +364,9 @@ class KeystoneIdentityTestCase(test.TestCase):
             fake_info['users'].append(
                 {'user': {'name': user.name,
                           'id': user.id,
+                          'enabled': True,
                           'email': user.email,
-                          'tenantId': user.tenantId},
+                          'tenant_id': user.tenantId},
                  'meta': {'overwrite_password': False}})
 
         for role in fake_roles_list:

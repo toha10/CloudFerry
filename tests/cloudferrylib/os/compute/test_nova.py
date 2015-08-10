@@ -29,7 +29,10 @@ FAKE_CONFIG = utils.ext_dict(
     cloud=utils.ext_dict({'user': 'fake_user',
                           'password': 'fake_password',
                           'tenant': 'fake_tenant',
-                          'auth_url': 'http://1.1.1.1:35357/v2.0/'}),
+                          'auth_url': 'http://1.1.1.1:35357/v2.0/',
+                          'insecure_ssl': True}),
+    compute=utils.ext_dict({'wait_for_status_retries': 3,
+                            'wait_for_status_interval': 2}),
     mysql=utils.ext_dict({'host': '1.1.1.1'}),
     migrate=utils.ext_dict({'speed_limit': '10MB',
                             'retry': '7',
@@ -72,7 +75,7 @@ class NovaComputeTestCase(test.TestCase):
 
         self.mock_client.assert_called_once_with('fake_user', 'fake_password',
                                                  'fake_tenant',
-                                                 'http://1.1.1.1:35357/v2.0/')
+                                                 'http://1.1.1.1:35357/v2.0/', insecure=True)
         self.assertEqual(self.mock_client(), client)
 
     def test_create_instance(self):
@@ -87,8 +90,6 @@ class NovaComputeTestCase(test.TestCase):
     def test_get_instances_list(self):
         fake_instances_list = [self.fake_instance_0, self.fake_instance_1]
         self.mock_client().servers.list.return_value = fake_instances_list
-
-        instances_list = self.nova_client.get_instances_list()
 
         test_args = {'marker': None,
                      'detailed': True,

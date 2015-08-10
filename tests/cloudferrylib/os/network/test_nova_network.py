@@ -27,7 +27,8 @@ FAKE_CONFIG = utils.ext_dict(
     cloud=utils.ext_dict({'user': 'fake_user',
                           'password': 'fake_password',
                           'tenant': 'fake_tenant',
-                          'auth_url': 'http://1.1.1.1:35357/v2.0/'}),
+                          'auth_url': 'http://1.1.1.1:35357/v2.0/',
+                          'insecure_ssl': True}),
     migrate=utils.ext_dict({'speed_limit': '10MB',
                             'retry': '7',
                             'time_wait': 5}))
@@ -67,7 +68,7 @@ class TestNovaNetwork(test.TestCase):
                 FAKE_CONFIG.cloud.tenant,
                 FAKE_CONFIG.cloud.auth_url)
         client = self.nova_network_client.get_client()
-        self.nova_mock_client.assert_called_once_with(*args)
+        self.nova_mock_client.assert_called_once_with(*args, insecure=FAKE_CONFIG.cloud.insecure_ssl)
 
         self.assertEquals(self.nova_mock_client(), client)
 
