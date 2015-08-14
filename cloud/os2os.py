@@ -77,6 +77,7 @@ from cloudferrylib.os.actions import is_boot_from_volume
 from cloudferrylib.os.actions import get_info_compute_resources
 from cloudferrylib.os.actions import add_custom_flavors
 from cloudferrylib.os.actions import map_bootvol_to_diff
+from cloudferrylib.os.actions import delete_file
 
 
 class OS2OSFerry(cloud_ferry.CloudFerry):
@@ -356,6 +357,7 @@ class OS2OSFerry(cloud_ferry.CloudFerry):
                                                          resource_name=utl.INSTANCES_TYPE,
                                                          resource_root_name=utl.DIFF_BODY)
         act_transport_ephemeral = transport_ephemeral.TransportEphemeral(self.init, cloud='dst_cloud')
+        act_delete_tmp_raw = delete_file.DeleteFile(self.init, filetype=utl.DIFF_BODY)
 
         return act_convert_to_raw >> \
                act_map_com_info >> \
@@ -363,7 +365,8 @@ class OS2OSFerry(cloud_ferry.CloudFerry):
                act_deploy_instances >> \
                act_map_boot_vol_to_diff >> \
                act_trans_diff_file >> \
-               act_transport_ephemeral
+               act_transport_ephemeral >> \
+               act_delete_tmp_raw
 
     def migrate_process_instance(self):
         act_create_snapshot = create_snapshot.CreateSnapshot(self.init, cloud='src_cloud')
