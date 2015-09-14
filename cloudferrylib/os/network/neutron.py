@@ -69,36 +69,50 @@ class NeutronNetwork(network.Network):
                 'meta': {}}
         if self.config.migrate.keep_lbaas:
             info['lbaas'] = dict()
-            info['lb_pools'] = self.get_lb_pools()
-            info['lb_monitors'] = self.get_lb_monitors()
-            info['lb_members'] = self.get_lb_members()
-            info['lb_vips'] = self.get_lb_vips()
+            info['lb_pools'] = self.get_lb_pools(tenant_id)
+            info['lb_monitors'] = self.get_lb_monitors(tenant_id)
+            info['lb_members'] = self.get_lb_members(tenant_id)
+            info['lb_vips'] = self.get_lb_vips(tenant_id)
         return info
 
     def deploy(self, info):
+        tenant_id = ''
+        if not self.config.migrate.all_networks:
+            tenant_name = self.config.cloud.tenant
+            tenant_id = self.identity_client.get_tenant_id_by_name(tenant_name)
         deploy_info = info
-        self.upload_networks(deploy_info['networks'])
+        self.upload_networks(deploy_info['networks'], tenant_id)
         self.upload_subnets(deploy_info['networks'],
-                            deploy_info['subnets'])
+                            deploy_info['subnets'],
+                            tenant_id)
         if self.config.migrate.keep_floatingip:
             self.upload_floatingips(deploy_info['networks'],
-                                    deploy_info['floating_ips'])
+                                    deploy_info['floating_ips'],
+                                    tenant_id)
         self.upload_routers(deploy_info['networks'],
                             deploy_info['subnets'],
-                            deploy_info['routers'])
-        self.upload_neutron_security_groups(deploy_info['security_groups'])
-        self.upload_sec_group_rules(deploy_info['security_groups'])
+                            deploy_info['routers'],
+                            tenant_id)
+        self.upload_neutron_security_groups(deploy_info['security_groups'],
+                                            tenant_id)
+        self.upload_sec_group_rules(deploy_info['security_groups'],
+                                    tenant_id)
         if self.config.migrate.keep_lbaas:
             self.upload_lb_pools(deploy_info['lb_pools'],
-                                 deploy_info['subnets'])
-            self.upload_lb_monitors(deploy_info['lb_monitors'])
+                                 deploy_info['subnets'],
+                                 tenant_id)
+            self.upload_lb_monitors(deploy_info['lb_monitors'],
+                                    tenant_id)
             self.associate_lb_monitors(deploy_info['lb_pools'],
-                                    deploy_info['lb_monitors'])
+                                    deploy_info['lb_monitors'],
+                                    tenant_id)
             self.upload_lb_members(deploy_info['lb_members'],
-                                   deploy_info['lb_pools'])
+                                   deploy_info['lb_pools'],
+                                   tenant_id)
             self.upload_lb_vips(deploy_info['lb_vips'],
                                 deploy_info['lb_pools'],
-                                deploy_info['subnets'])
+                                deploy_info['subnets'],
+                                tenant_id)
 
     def get_func_mac_address(self, instance):
         return self.get_mac_by_ip
@@ -204,11 +218,12 @@ class NeutronNetwork(network.Network):
             'meta': {},
         }
 
-        res_hash = net_res.get_resource_hash(result,
-                                             'name',
-                                             'shared',
-                                             'tenant_name',
-                                             'router:external')
+        hash_args = ['name', 'shared', 'router:external']
+
+        if cloud.cloud_config.migrate.all_networks:
+            hash_args.append('tenant_name')
+
+        res_hash = net_res.get_resource_hash(result, *hash_args)
         result['res_hash'] = res_hash
         return result
 
@@ -236,13 +251,13 @@ class NeutronNetwork(network.Network):
             'meta': {},
         }
 
-        res_hash = network_res.get_resource_hash(result,
-                                                 'name',
-                                                 'enable_dhcp',
-                                                 'allocation_pools',
-                                                 'gateway_ip',
-                                                 'cidr',
-                                                 'tenant_name')
+        hash_args = ['name', 'enable_dhcp', 'allocation_pools',
+                     'gateway_ip', 'cidr']
+
+        if cloud.cloud_config.migrate.all_networks:
+            hash_args.append('tenant_name')
+
+        res_hash = network_res.get_resource_hash(result, *hash_args)
 
         result['res_hash'] = res_hash
 
@@ -287,10 +302,12 @@ class NeutronNetwork(network.Network):
             result['ext_net_id'] = router['external_gateway_info'][
                 'network_id']
 
-        res_hash = net_res.get_resource_hash(result,
-                                             'name',
-                                             'routes',
-                                             'tenant_name')
+        hash_args = ['name', 'routes']
+
+        if cloud.cloud_config.migrate.all_networks:
+            hash_args.append('tenant_name')
+
+        res_hash = net_res.get_resource_hash(result, *hash_args)
 
         result['res_hash'] = res_hash
 
@@ -369,9 +386,12 @@ class NeutronNetwork(network.Network):
             'meta': {},
         }
 
-        res_hash = net_res.get_resource_hash(result,
-                                             'name',
-                                             'tenant_name')
+        hash_args = ['name']
+
+        if cloud.cloud_config.migrate.all_networks:
+            hash_args.append('tenant_name')
+
+        res_hash = net_res.get_resource_hash(result, *hash_args)
 
         result['res_hash'] = res_hash
 
@@ -399,12 +419,12 @@ class NeutronNetwork(network.Network):
             'meta': {}
         }
 
-        res_hash = net_res.get_resource_hash(result,
-                                             'name',
-                                             'tenant_name',
-                                             'lb_method',
-                                             'protocol',
-                                             'provider')
+        hash_args = ['name', 'lb_method', 'protocol','provider']
+
+        if cloud.cloud_config.migrate.all_networks:
+            hash_args.append('tenant_name')
+
+        res_hash = net_res.get_resource_hash(result, *hash_args)
 
         result['res_hash'] = res_hash
 
@@ -431,12 +451,12 @@ class NeutronNetwork(network.Network):
             'meta': {}
         }
 
-        res_hash = net_res.get_resource_hash(result,
-                                             'tenant_name',
-                                             'type',
-                                             'delay',
-                                             'timeout',
-                                             'max_retries')
+        hash_args = ['type', 'delay', 'timeout','max_retries']
+
+        if cloud.cloud_config.migrate.all_networks:
+            hash_args.append('tenant_name')
+
+        res_hash = net_res.get_resource_hash(result, *hash_args)
 
         result['res_hash'] = res_hash
 
@@ -460,11 +480,12 @@ class NeutronNetwork(network.Network):
             'meta': {}
         }
 
-        res_hash = net_res.get_resource_hash(result,
-                                             'address',
-                                             'protocol_port',
-                                             'weight',
-                                             'tenant_name')
+        hash_args = ['address', 'protocol_port', 'weight']
+
+        if cloud.cloud_config.migrate.all_networks:
+            hash_args.append('tenant_name')
+
+        res_hash = net_res.get_resource_hash(result, *hash_args)
 
         result['res_hash'] = res_hash
 
@@ -493,12 +514,12 @@ class NeutronNetwork(network.Network):
             'meta': {}
         }
 
-        res_hash = net_res.get_resource_hash(result,
-                                             'name',
-                                             'address',
-                                             'protocol',
-                                             'protocol_port',
-                                             'tenant_name')
+        hash_args = ['name', 'address', 'protocol', 'protocol_port']
+
+        if cloud.cloud_config.migrate.all_networks:
+            hash_args.append('tenant_name')
+
+        res_hash = net_res.get_resource_hash(result, *hash_args)
 
         result['res_hash'] = res_hash
 
@@ -578,8 +599,8 @@ class NeutronNetwork(network.Network):
 
         return sec_groups_info
 
-    def get_lb_pools(self):
-        pools = self.neutron_client.list_pools()['pools']
+    def get_lb_pools(self, tenant_id=''):
+        pools = self.neutron_client.list_pools(tenant_id=tenant_id)['pools']
         pools_info = []
 
         for pool in pools:
@@ -588,9 +609,9 @@ class NeutronNetwork(network.Network):
 
         return pools_info
 
-    def get_lb_monitors(self):
+    def get_lb_monitors(self, tenant_id=''):
         monitors = \
-            self.neutron_client.list_health_monitors()['health_monitors']
+            self.neutron_client.list_health_monitors(tenant_id=tenant_id)['health_monitors']
         monitors_info = []
 
         for mon in monitors:
@@ -599,8 +620,8 @@ class NeutronNetwork(network.Network):
 
         return monitors_info
 
-    def get_lb_members(self):
-        members = self.neutron_client.list_members()['members']
+    def get_lb_members(self, tenant_id=''):
+        members = self.neutron_client.list_members(tenant_id=tenant_id)['members']
         members_info = []
 
         for member in members:
@@ -609,8 +630,8 @@ class NeutronNetwork(network.Network):
 
         return members_info
 
-    def get_lb_vips(self):
-        vips = self.neutron_client.list_vips()['vips']
+    def get_lb_vips(self, tenant_id=''):
+        vips = self.neutron_client.list_vips(tenant_id=tenant_id)['vips']
         vips_info = []
 
         for vip in vips:
@@ -619,15 +640,16 @@ class NeutronNetwork(network.Network):
 
         return vips_info
 
-    def upload_lb_vips(self, vips, pools, subnets):
-        existing_vips = self.get_lb_vips()
+    def upload_lb_vips(self, vips, pools, subnets, tenant_id=''):
+        existing_vips = self.get_lb_vips(tenant_id)
         existing_vips_hashlist = [ex_vip['res_hash'] for ex_vip in existing_vips]
-        existing_pools = self.get_lb_pools()
-        existing_snets = self.get_subnets()
+        existing_pools = self.get_lb_pools(tenant_id)
+        existing_snets = self.get_subnets(tenant_id)
         for vip in vips:
             if vip['res_hash'] not in existing_vips_hashlist:
-                tenant_id = \
-                    self.identity_client.get_tenant_id_by_name(vip['tenant_name'])
+                if not tenant_id:
+                    tenant_id = \
+                        self.identity_client.get_tenant_id_by_name(vip['tenant_name'])
                 pool_hash = self.get_res_hash_by_id(pools, vip['pool_id'])
                 dst_pool = self.get_res_by_hash(existing_pools, pool_hash)
                 snet_hash = self.get_res_hash_by_id(subnets, vip['subnet_id'])
@@ -655,15 +677,16 @@ class NeutronNetwork(network.Network):
                          (vip['address'], vip['tenant_name']))
 
 
-    def upload_lb_members(self, members, pools):
-        existing_members = self.get_lb_members()
+    def upload_lb_members(self, members, pools, tenant_id=''):
+        existing_members = self.get_lb_members(tenant_id)
         existing_members_hashlist = \
             [ex_member['res_hash'] for ex_member in existing_members]
-        existing_pools = self.get_lb_pools()
+        existing_pools = self.get_lb_pools(tenant_id)
         for member in members:
             if member['res_hash'] not in existing_members_hashlist:
-                tenant_id = \
-                    self.identity_client.get_tenant_id_by_name(member['tenant_name'])
+                if not tenant_id:
+                    tenant_id = \
+                        self.identity_client.get_tenant_id_by_name(member['tenant_name'])
                 pool_hash = self.get_res_hash_by_id(pools, member['pool_id'])
                 dst_pool = self.get_res_by_hash(existing_pools, pool_hash)
                 member_info = {
@@ -683,14 +706,15 @@ class NeutronNetwork(network.Network):
                          (member['address'], member['tenant_name']))
 
 
-    def upload_lb_monitors(self, monitors):
-        existing_mons = self.get_lb_monitors()
+    def upload_lb_monitors(self, monitors, tenant_id=''):
+        existing_mons = self.get_lb_monitors(tenant_id)
         existing_mons_hashlist = \
             [ex_mon['res_hash'] for ex_mon in existing_mons]
         for mon in monitors:
             if mon['res_hash'] not in existing_mons_hashlist:
-                tenant_id = \
-                    self.identity_client.get_tenant_id_by_name(mon['tenant_name'])
+                if not tenant_id:
+                    tenant_id = \
+                        self.identity_client.get_tenant_id_by_name(mon['tenant_name'])
                 mon_info = {
                     'health_monitor':
                         {
@@ -711,9 +735,9 @@ class NeutronNetwork(network.Network):
                          "with type %s in tenant %s" %
                          (mon['type'], mon['tenant_name']))
 
-    def associate_lb_monitors(self, pools, monitors):
-        existing_pools = self.get_lb_pools()
-        existing_monitors = self.get_lb_monitors()
+    def associate_lb_monitors(self, pools, monitors, tenant_id=''):
+        existing_pools = self.get_lb_pools(tenant_id)
+        existing_monitors = self.get_lb_monitors(tenant_id)
         for pool in pools:
             pool_hash = self.get_res_hash_by_id(pools, pool['id'])
             dst_pool = self.get_res_by_hash(existing_pools, pool_hash)
@@ -733,15 +757,16 @@ class NeutronNetwork(network.Network):
                          "with id %s in tenant %s" %
                          (dst_pool['name'], dst_monitor['id'], dst_monitor['tenant_name']))
 
-    def upload_lb_pools(self, pools, subnets):
-        existing_pools = self.get_lb_pools()
+    def upload_lb_pools(self, pools, subnets, tenant_id=''):
+        existing_pools = self.get_lb_pools(tenant_id)
         existing_pools_hashlist = \
             [ex_pool['res_hash'] for ex_pool in existing_pools]
-        existing_subnets = self.get_subnets()
+        existing_subnets = self.get_subnets(tenant_id)
         for pool in pools:
             if pool['res_hash'] not in existing_pools_hashlist:
-                tenant_id = \
-                    self.identity_client.get_tenant_id_by_name(pool['tenant_name'])
+                if not tenant_id:
+                    tenant_id = \
+                        self.identity_client.get_tenant_id_by_name(pool['tenant_name'])
                 snet_hash = self.get_res_hash_by_id(subnets, pool['subnet_id'])
                 snet_id = self.get_res_by_hash(existing_subnets,
                                                snet_hash)['id']
@@ -764,16 +789,17 @@ class NeutronNetwork(network.Network):
                          "with name %s in tenant %s" %
                          (pool['name'], pool['tenant_name']))
 
-    def upload_neutron_security_groups(self, sec_groups):
-        exist_secgrs = self.get_sec_gr_and_rules()
+    def upload_neutron_security_groups(self, sec_groups, tenant_id=''):
+        exist_secgrs = self.get_sec_gr_and_rules(tenant_id)
         exis_secgrs_hashlist = [ex_sg['res_hash'] for ex_sg in exist_secgrs]
         for sec_group in sec_groups:
             if sec_group['name'] != DEFAULT_SECGR:
                 if sec_group['res_hash'] not in exis_secgrs_hashlist:
-                    tenant_id = \
-                        self.identity_client.get_tenant_id_by_name(
-                            sec_group['tenant_name']
-                        )
+                    if not tenant_id:
+                        tenant_id = \
+                            self.identity_client.get_tenant_id_by_name(
+                                sec_group['tenant_name']
+                            )
                     sg_info = \
                         {
                             'security_group':
@@ -786,8 +812,8 @@ class NeutronNetwork(network.Network):
                     sec_group['meta']['id'] = self.neutron_client.\
                         create_security_group(sg_info)['security_group']['id']
 
-    def upload_sec_group_rules(self, sec_groups):
-        ex_secgrs = self.get_sec_gr_and_rules()
+    def upload_sec_group_rules(self, sec_groups, tenant_id=''):
+        ex_secgrs = self.get_sec_gr_and_rules(tenant_id)
         for sec_gr in sec_groups:
             ex_secgr = \
                 self.get_res_by_hash(ex_secgrs, sec_gr['res_hash'])
@@ -819,12 +845,13 @@ class NeutronNetwork(network.Network):
                         self.neutron_client.create_security_group_rule(rinfo)
                     rule['meta']['id'] = new_rule['security_group_rule']['id']
 
-    def upload_networks(self, networks):
+    def upload_networks(self, networks, tenant_id=''):
         existing_nets_hashlist = \
-            [ex_net['res_hash'] for ex_net in self.get_networks()]
+            [ex_net['res_hash'] for ex_net in self.get_networks(tenant_id)]
         for net in networks:
-            tenant_id = \
-                self.identity_client.get_tenant_id_by_name(net['tenant_name'])
+            if not tenant_id:
+                tenant_id = \
+                    self.identity_client.get_tenant_id_by_name(net['tenant_name'])
             network_info = {
                 'network':
                 {
@@ -856,17 +883,18 @@ class NeutronNetwork(network.Network):
                          "with name %s in tenant %s" %
                          (net['name'], net['tenant_name']))
 
-    def upload_subnets(self, networks, subnets):
-        existing_nets = self.get_networks()
+    def upload_subnets(self, networks, subnets, tenant_id=''):
+        existing_nets = self.get_networks(tenant_id)
         existing_subnets_hashlist = \
-            [ex_snet['res_hash'] for ex_snet in self.get_subnets()]
+            [ex_snet['res_hash'] for ex_snet in self.get_subnets(tenant_id)]
         for snet in subnets:
             if snet['external']:
                 if not self.config.migrate.migrate_extnets or \
                                 snet['network_id'] in self.ext_net_map:
                     continue
-            tenant_id = \
-                self.identity_client.get_tenant_id_by_name(snet['tenant_name'])
+            if not tenant_id:
+                tenant_id = \
+                    self.identity_client.get_tenant_id_by_name(snet['tenant_name'])
             net_hash = \
                 self.get_res_hash_by_id(networks, snet['network_id'])
             network = \
@@ -893,16 +921,17 @@ class NeutronNetwork(network.Network):
                          "with name %s in tenant %s" %
                          (snet['name'], snet['tenant_name']))
 
-    def upload_routers(self, networks, subnets, routers):
-        existing_nets = self.get_networks()
-        existing_subnets = self.get_subnets()
-        existing_routers = self.get_routers()
+    def upload_routers(self, networks, subnets, routers, tenant_id=''):
+        existing_nets = self.get_networks(tenant_id)
+        existing_subnets = self.get_subnets(tenant_id)
+        existing_routers = self.get_routers(tenant_id)
         existing_routers_hashlist = \
             [ex_router['res_hash'] for ex_router in existing_routers]
         for router in routers:
-            tname = router['tenant_name']
-            tenant_id = \
-                self.identity_client.get_tenant_id_by_name(tname)
+            if not tenant_id:
+                tname = router['tenant_name']
+                tenant_id = \
+                    self.identity_client.get_tenant_id_by_name(tname)
             r_info = {'router': {'name': router['name'],
                                  'tenant_id': tenant_id}}
             if router['external_gateway_info'] and \
@@ -940,6 +969,11 @@ class NeutronNetwork(network.Network):
         for snet_id in src_router['subnet_ids']:
             snet_hash = self.get_res_hash_by_id(src_snets, snet_id)
             src_net = self.get_res_by_hash(src_snets, snet_hash)
+            if src_net is None and not self.cloud.cloud_config.migrate.all_networks:
+                LOG.warn("Appropriate subnet for router interface attahing operation can't be found. "
+                         "Most likely because 'all_networks=False' parameter is used. "
+                         "SRC Subnet id=%s" % snet_id)
+                continue
             if src_net['external']:
                 continue
             ex_snet = self.get_res_by_hash(dst_snets,
@@ -948,8 +982,8 @@ class NeutronNetwork(network.Network):
                 dst_router['id'],
                 {"subnet_id": ex_snet['id']})
 
-    def upload_floatingips(self, networks, src_floats):
-        existing_nets = self.get_networks()
+    def upload_floatingips(self, networks, src_floats, tenant_id=''):
+        existing_nets = self.get_networks(tenant_id)
         ext_nets_ids = []
         # getting list of external networks with allocated floating ips
         for src_float in src_floats:
@@ -958,7 +992,7 @@ class NeutronNetwork(network.Network):
             if ext_net_id not in ext_nets_ids:
                 ext_nets_ids.append(ext_net_id)
                 self.allocate_floatingips(ext_net_id)
-        existing_floatingips = self.get_floatingips()
+        existing_floatingips = self.get_floatingips(tenant_id)
         self.recreate_floatingips(src_floats, networks,
                                   existing_nets, existing_floatingips)
         self.delete_redundant_floatingips(src_floats, existing_floatingips)
@@ -977,16 +1011,18 @@ class NeutronNetwork(network.Network):
 
     def recreate_floatingips(self, src_floats, src_nets,
                              existing_nets,
-                             existing_floatingips):
+                             existing_floatingips,
+                             tenant_id=''):
 
         """ We recreate floating ips with the same parameters as on src cloud,
         because we can't determine floating ip address
         during allocation process. """
 
         for src_float in src_floats:
-            tname = src_float['tenant_name']
-            tenant_id = \
-                self.identity_client.get_tenant_id_by_name(tname)
+            if not tenant_id:
+                tname = src_float['tenant_name']
+                tenant_id = \
+                    self.identity_client.get_tenant_id_by_name(tname)
             ext_net_id = self.get_new_extnet_id(src_float['floating_network_id'],
                                                 src_nets, existing_nets)
             for floating in existing_floatingips:
