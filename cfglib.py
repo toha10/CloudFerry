@@ -142,6 +142,10 @@ migrate_opts = [
     cfg.BoolOpt('map_images_to_tenant', default=False,
                 help="Set images owner to tenant that is used for authorization "
                      "on DST cloud"),
+    cfg.BoolOpt('map_compute_to_tenant', default=False,
+                help="Restrict compute resources migration only related to one tenant "
+                     "that is used for authorization on SRC cloud. Only flavors will "
+                     "be migrated"),
 ]
 
 mail = cfg.OptGroup(name='mail',

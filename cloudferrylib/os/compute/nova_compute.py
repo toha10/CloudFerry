@@ -116,14 +116,23 @@ class NovaCompute(compute.Compute):
                 'user_quotas': [],
                 'project_quotas': []}
 
-        info['keypairs'] = self._read_info_keypairs()
+        if self.config.migrate.map_compute_to_tenant:
 
-        for flavor in self.get_flavor_list(is_public=None):
-            info['flavors'][flavor.id] = self.convert(flavor, cloud=self.cloud)
+            for flavor in self.get_flavor_list():
+                info['flavors'][flavor.id] = self.convert(flavor, cloud=self.cloud)
 
-        if self.config.migrate.migrate_quotas:
-            info['project_quotas'], info['user_quotas'] = \
-                self._read_info_quotas_api()
+        else:
+
+            for flavor in self.get_flavor_list(is_public=None):
+                info['flavors'][flavor.id] = self.convert(flavor, cloud=self.cloud)
+
+            if not self.config.migrate.map_compute_to_tenant:
+
+                info['keypairs'] = self._read_info_keypairs()
+
+                if self.config.migrate.migrate_quotas:
+                    info['project_quotas'], info['user_quotas'] = \
+                        self._read_info_quotas_api()
 
         return info
 
@@ -344,18 +353,25 @@ class NovaCompute(compute.Compute):
         :param identity_info: Identity info.
         """
 
-        identity_info = kwargs.get('identity_info')
+        if self.config.migrate.map_compute_to_tenant:
+            tenant_name = self.config.cloud.tenant
+            tenant_id = self.identity.get_tenant_id_by_name(tenant_name)
+            self._deploy_flavors(info['flavors'], None, tenant_id)
 
-        tenant_map = {tenant['tenant']['id']: tenant['meta']['new_id'] for
-                      tenant in identity_info['tenants']}
-        user_map = {user['user']['id']: user['meta']['new_id'] for user in
-                    identity_info['users']}
+        else:
 
-        self._deploy_key_pairs(info['keypairs'], user_map)
-        self._deploy_flavors(info['flavors'], tenant_map)
-        if self.config['migrate']['migrate_quotas']:
-            self._deploy_quotas_api(info['project_quotas'], tenant_map)
-            self._deploy_quotas_api(info['user_quotas'], tenant_map, user_map)
+            identity_info = kwargs.get('identity_info')
+
+            tenant_map = {tenant['tenant']['id']: tenant['meta']['new_id'] for
+                          tenant in identity_info['tenants']}
+            user_map = {user['user']['id']: user['meta']['new_id'] for user in
+                        identity_info['users']}
+
+            self._deploy_key_pairs(info['keypairs'], user_map)
+            self._deploy_flavors(info['flavors'], tenant_map)
+            if self.config['migrate']['migrate_quotas']:
+                self._deploy_quotas_api(info['project_quotas'], tenant_map)
+                self._deploy_quotas_api(info['user_quotas'], tenant_map, user_map)
 
         new_info = self.read_info(target='resources')
 
@@ -478,7 +494,7 @@ class NovaCompute(compute.Compute):
 
             self.update_quota(tenant_id=tenant_id, user_id=user_id, **quota_info)
 
-    def _deploy_flavors(self, flavors, tenant_map):
+    def _deploy_flavors(self, flavors, tenant_map, tenant_id=None):
         dest_flavors = {flavor.name: flavor.id for flavor in
                         self.get_flavor_list(is_public=None)}
         for flavor_id, _flavor in flavors.iteritems():
@@ -486,6 +502,11 @@ class NovaCompute(compute.Compute):
             if flavor['name'] in dest_flavors:
                 # _flavor['meta']['dest_id'] = dest_flavors[flavor['name']]
                 _flavor['meta']['id'] = dest_flavors[flavor['name']]
+                if not flavor['is_public'] and tenant_id:
+                    dest_tenant_flavors = {flavor.name: flavor.id for flavor in
+                                           self.get_flavor_list()}
+                    if flavor['name'] not in dest_tenant_flavors:
+                        self.add_flavor_access(_flavor['meta']['id'], tenant_id)
                 continue
             _flavor['meta']['id'] = self.create_flavor(
                 name=flavor['name'],
@@ -498,9 +519,12 @@ class NovaCompute(compute.Compute):
                 rxtx_factor=flavor['rxtx_factor'],
                 is_public=flavor['is_public']).id
             if not flavor['is_public']:
-                for tenant in flavor['tenants']:
-                    self.add_flavor_access(_flavor['meta']['id'],
-                                           tenant_map[tenant])
+                if tenant_map:
+                    for tenant in flavor['tenants']:
+                        self.add_flavor_access(_flavor['meta']['id'],
+                                               tenant_map[tenant])
+                else:
+                    self.add_flavor_access(_flavor['meta']['id'], tenant_id)
 
     def _deploy_instances(self, info_compute):
         new_ids = {}
