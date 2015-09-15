@@ -139,6 +139,9 @@ migrate_opts = [
                      "with unrecoverable error if host is down."),
     cfg.BoolOpt('all_networks', default=False,
                 help="Migrate all network resources from all tenants"),
+    cfg.BoolOpt('map_images_to_tenant', default=False,
+                help="Set images owner to tenant that is used for authorization "
+                     "on DST cloud"),
 ]
 
 mail = cfg.OptGroup(name='mail',

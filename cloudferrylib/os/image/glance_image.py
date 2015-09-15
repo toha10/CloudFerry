@@ -202,8 +202,12 @@ class GlanceImage(image.Image):
                     migrate_images_list.append(
                         (dst_img_checksums[checksum_current], meta))
                     continue
-                tenant_id = \
-                    self.identity_client.get_tenant_id_by_name(gl_image['image']['owner_name'])
+                if self.config.migrate.map_images_to_tenant:
+                    tenant_id = \
+                        self.identity_client.get_tenant_id_by_name(self.config.cloud.tenant)
+                else:
+                    tenant_id = \
+                        self.identity_client.get_tenant_id_by_name(gl_image['image']['owner_name'])
                 migrate_image = self.create_image(
                     name=gl_image['image']['name'],
                     container_format=gl_image['image']['container_format'],
