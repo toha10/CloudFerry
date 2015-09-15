@@ -44,7 +44,10 @@ class PrepareNetworks(action.Action):
             params = []
             networks_info = inst[utl.INSTANCE_BODY][utl.INTERFACES]
             security_groups = inst[utl.INSTANCE_BODY]['security_groups']
-            tenant_name = inst[utl.INSTANCE_BODY]['tenant_name']
+            if self.cfg.migrate.map_compute_to_tenant:
+                tenant_name = self.cloud.cloud_config.cloud.tenant
+            else:
+                tenant_name = inst[utl.INSTANCE_BODY]['tenant_name']
             tenant_id = identity_resource.get_tenant_id_by_name(tenant_name)
             for src_net in networks_info:
                 dst_net = network_resource.get_network(src_net, tenant_id,

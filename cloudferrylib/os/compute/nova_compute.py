@@ -537,6 +537,8 @@ class NovaCompute(compute.Compute):
                   'host': self.config['cloud']['host']}
 
         for _instance in info_compute['instances'].itervalues():
+            if self.config.migrate.map_compute_to_tenant:
+                _instance['instance']['tenant_name'] = self.config.cloud.tenant
             tenant_name = _instance['instance']['tenant_name']
             if tenant_name not in nova_tenants_clients:
                 params['tenant'] = tenant_name
