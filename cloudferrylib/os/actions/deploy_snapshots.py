@@ -30,8 +30,6 @@ class DeployVolSnapshots(action.Action):
     def run(self, storage_info=None, identity_info=None, **kwargs):
         storage_info = copy.deepcopy(storage_info)
         deploy_info = copy.deepcopy(storage_info)
-        deploy_info.update(identity_info)
-        storage_info.update(identity_info)
         volume_resource = self.cloud.resources[utl.STORAGE_RESOURCE]
         for vol_id, vol in deploy_info[utl.VOLUMES_TYPE].iteritems():
             if vol['snapshots'] and not vol[utl.VOLUME_BODY]['snapshot_id']:

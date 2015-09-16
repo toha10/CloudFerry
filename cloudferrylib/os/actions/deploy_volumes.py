@@ -26,8 +26,6 @@ class DeployVolumes(action.Action):
     def run(self, storage_info={}, identity_info={}, **kwargs):
         storage_info = copy.deepcopy(storage_info)
         deploy_info = copy.deepcopy(storage_info)
-        deploy_info.update(identity_info)
-        storage_info.update(identity_info)
         volume_resource = self.cloud.resources[utl.STORAGE_RESOURCE]
         new_ids = volume_resource.deploy(deploy_info)
         storage_info_new = {
