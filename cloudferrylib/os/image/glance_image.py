@@ -193,12 +193,9 @@ class GlanceImage(image.Image):
             if gl_image['image']:
                 dst_img_checksums = {x.checksum: x for x in
                                      self.get_image_list()}
-                dst_img_names = [x.name for x in self.get_image_list()]
                 checksum_current = gl_image['image']['checksum']
-                name_current = gl_image['image']['name']
                 meta = gl_image['meta']
-                if checksum_current in dst_img_checksums and (
-                        name_current) in dst_img_names:
+                if checksum_current in dst_img_checksums:
                     migrate_images_list.append(
                         (dst_img_checksums[checksum_current], meta))
                     continue
