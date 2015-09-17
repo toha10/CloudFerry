@@ -36,6 +36,7 @@ LEN_UUID_INSTANCE = 36
 INTERFACES = "interfaces"
 DEFAULT_QUOTA_VALUE = -1
 SNAPSHOT = 'snapshot'
+DIRECT = 'direct'
 
 INSTANCE_HOST_ATTRIBUTE = 'OS-EXT-SRV-ATTR:host'
 
@@ -564,9 +565,14 @@ class NovaCompute(compute.Compute):
                 create_params['image'] = None
             if self.config.migrate.instance_convert_to_bfv:
                 if instance['boot_mode'] == utl.BOOT_FROM_IMAGE:
+                    if self.config.migrate.instance_migration_strategy == DIRECT and \
+                            self.config.migrate.temp_image_uuid:
+                        source_image_id = self.config.migrate.temp_image_uuid
+                    else:
+                        source_image_id = instance['image_id']
                     create_params["block_device_mapping_v2"] = [{
                         "source_type": "image",
-                        "uuid": instance['image_id'],
+                        "uuid": source_image_id,
                         "destination_type": "volume",
                         "volume_size": instance['disk_size'],
                         "delete_on_termination": False,
