@@ -19,6 +19,7 @@ import time
 from sqlalchemy import exc
 
 from novaclient.v1_1 import client as nova_client
+from novaclient import exceptions as nova_exc
 
 import cfglib
 from cloudferrylib.base import compute
