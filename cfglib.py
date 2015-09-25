@@ -131,7 +131,7 @@ migrate_opts = [
                     'will be created with boot_from_volume option after migration '
                     'and their snapshot will be source image, '
                     'False - do not change instance boot settings'),
-    cfg.StrOpt('temp_image_uuid', default=False,
+    cfg.StrOpt('temp_image_uuid', default='',
                help='this option works only in case instance_convert_to_bfv = True and '
                     'instance_migration_strategy = direct,'
                     'False - original image will be used for initial instance spawning,'
