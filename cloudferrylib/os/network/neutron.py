@@ -542,6 +542,12 @@ class NeutronNetwork(network.Network):
     def get_subnets(self, tenant_id=''):
         subnets = self.neutron_client.list_subnets(
             tenant_id=tenant_id)['subnets']
+
+        if subnets == [] and tenant_id:
+            # if tenant_id filter doesn't work for subnet list
+            all_subnets = self.neutron_client.list_subnets()['subnets']
+            subnets = [asnet for asnet in all_subnets if asnet['tenant_id'] == tenant_id]
+
         subnets_info = []
 
         for snet in subnets:
