@@ -302,7 +302,7 @@ class NeutronNetwork(network.Network):
             result['ext_net_id'] = router['external_gateway_info'][
                 'network_id']
 
-        hash_args = ['name', 'routes']
+        hash_args = ['name']
 
         if cloud.cloud_config.migrate.all_networks:
             hash_args.append('tenant_name')
