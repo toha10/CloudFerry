@@ -36,7 +36,7 @@ class SSHFileToCeph(driver_transporter.DriverTransporter):
                 env.key_filename):
             rbd_import = rbd_util.RbdUtil.rbd_import_cmd
             ssh_cmd_dst = cmd_cfg.ssh_cmd
-            ssh_dst = ssh_cmd_dst(ssh_ip_dst, rbd_import)
+            ssh_dst = ssh_cmd_dst(data['host_dst'], rbd_import)
 
             dd = cmd_cfg.dd_cmd_if
             ssh_cmd_src = cmd_cfg.ssh_cmd
