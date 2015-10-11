@@ -585,7 +585,7 @@ class NovaCompute(compute.Compute):
             key_name = instance['key_name']
             user_name = instance['user_name']
 
-            if key_name:
+            if key_name and self.config.migrate.assign_keypairs:
                 self.add_keypair_to_instance(new_id, user_name, key_name)
 
             new_ids[new_id] = instance['id']

@@ -153,6 +153,8 @@ migrate_opts = [
                 help="Restrict compute resources migration only related to one tenant "
                      "that is used for authorization on SRC cloud. Only flavors will "
                      "be migrated"),
+    cfg.BoolOpt('assign_keypairs', default=True,
+                help="Assign keypair to instance after migration"),
 ]
 
 mail = cfg.OptGroup(name='mail',
