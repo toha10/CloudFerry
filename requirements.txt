@@ -5,7 +5,7 @@ ipaddr
 jinja2
 --allow-external mysql-connector-python
 pycrypto
-python-cinderclient==1.0.9
+python-cinderclient==1.1.0
 python-glanceclient==0.12.0
 python-keystoneclient==0.9.0
 python-neutronclient==2.3.4
