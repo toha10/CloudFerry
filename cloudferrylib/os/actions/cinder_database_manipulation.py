@@ -31,6 +31,7 @@ NAMESPACE_CINDER_CONST = "cinder_database"
 AVAILABLE = 'available'
 CINDER_VOLUME = "cinder-volume"
 HOST = 'host'
+SSH_HOST = 'ssh_host'
 BY_VTID = 'by_vtid'
 ALL = 'all'
 MOUNT_DELIM = '='
@@ -72,7 +73,7 @@ RSYNC_CMD = (
 
 
 def _remote_runner(cloud):
-    return remote_runner.RemoteRunner(cloud[CFG].get(HOST),
+    return remote_runner.RemoteRunner(cloud[CFG].get(SSH_HOST),
                                       cloud[CFG].ssh_user,
                                       cloud[CFG].ssh_sudo_password,
                                       sudo=True)
@@ -210,7 +211,7 @@ class WriteVolumesDb(CinderDatabaseInteraction):
 
     def _run_cmd(self, cloud, cmd):
         runner = _remote_runner(cloud)
-        with settings(gateway=cloud[CLOUD].getIpSsh(),
+        with settings(gateway=cloud[CFG].get(SSH_HOST),
                       connection_attempts=self.ssh_attempts):
             output = runner.run(cmd)
             res = output.split('\r\n')
@@ -219,7 +220,7 @@ class WriteVolumesDb(CinderDatabaseInteraction):
     def run_repeat_on_errors(self, cloud, cmd):
         """Run remote command cmd."""
         runner = _remote_runner(cloud)
-        with settings(gateway=cloud[CLOUD].getIpSsh(),
+        with settings(gateway=cloud[CFG].get(SSH_HOST),
                       connection_attempts=self.ssh_attempts):
             runner.run_repeat_on_errors(cmd)
 
@@ -244,7 +245,7 @@ class WriteVolumesDb(CinderDatabaseInteraction):
     def _run_rsync(self, src, dst):
         cmd = RSYNC_CMD
         cmd += ' %s %s@%s:%s' % (src, self.cloud[DST][CFG].ssh_user,
-                                 self.cloud[DST][CFG].get(HOST), dst)
+                                 self.cloud[DST][CFG].get(SSH_HOST), dst)
         self.run_repeat_on_errors(self.cloud[SRC], cmd)
 
     def volume_size(self, cloud, vol_file):

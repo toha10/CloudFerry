@@ -307,7 +307,7 @@ class NovaCompute(compute.Compute):
         if direct_transfer:
             ext_cidr = cfg.cloud.ext_cidr
             host = utl.get_ext_ip(ext_cidr,
-                                  cloud.getIpSsh(),
+                                  cfg.cloud.ssh_host,
                                   instance_node,
                                   ssh_user)
         elif is_ceph:
@@ -316,7 +316,7 @@ class NovaCompute(compute.Compute):
             host = instance_node
 
         if not utl.libvirt_instance_exists(instance_name,
-                                           cloud.getIpSsh(),
+                                           cfg.cloud.ssh_host,
                                            instance_node,
                                            ssh_user,
                                            cfg.cloud.ssh_sudo_password):
@@ -326,7 +326,7 @@ class NovaCompute(compute.Compute):
 
         instance_block_info = utl.get_libvirt_block_info(
             instance_name,
-            cloud.getIpSsh(),
+            cfg.cloud.ssh_host,
             instance_node,
             ssh_user,
             cfg.cloud.ssh_sudo_password)
