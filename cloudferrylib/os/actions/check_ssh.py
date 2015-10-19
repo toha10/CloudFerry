@@ -50,7 +50,7 @@ class CheckSSH(action.Action):
         cfg = self.cloud.cloud_config.cloud
         runner = remote_runner.RemoteRunner(node, cfg.ssh_user,
                                             password=cfg.ssh_sudo_password)
-        gateway = self.cloud.getIpSsh()
+        gateway = cfg.ssh_host
         ssh_attempts = self.cloud.cloud_config.migrate.ssh_connection_attempts
 
         try:

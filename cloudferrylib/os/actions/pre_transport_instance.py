@@ -118,15 +118,16 @@ class PreTransportInstance(action.Action):
                       base_filename=filename)
 
     def merge_file(self, cloud, base_file, diff_file):
-        host = cloud.cloud_config.cloud.host
-        self.rebase_diff_file(host, base_file, diff_file)
-        self.commit_diff_file(host, diff_file)
+        ssh_host = cloud.cloud_config.cloud.ssh_host
+        self.rebase_diff_file(ssh_host, base_file, diff_file)
+        self.commit_diff_file(ssh_host, diff_file)
 
     def transport_image(self, dst_cloud, info, instance_id):
         path_dst = "%s/%s" % (dst_cloud.cloud_config.cloud.temp,
                               "temp%s_base" % instance_id)
         info[INSTANCES][instance_id][DIFF][PATH_DST] = path_dst
-        info[INSTANCES][instance_id][DIFF][HOST_DST] = dst_cloud.getIpSsh()
+        info[INSTANCES][instance_id][DIFF][HOST_DST] = \
+            dst_cloud.cloud_config.cloud.ssh_host
 
         transporter = task_transfer.TaskTransfer(
             self.init,
@@ -159,7 +160,8 @@ class PreTransportInstance(action.Action):
                                "temp%s" % instance_id)
 
         info[INSTANCES][instance_id][DIFF][PATH_DST] = diff_file
-        info[INSTANCES][instance_id][DIFF][HOST_DST] = dst_cloud.getIpSsh()
+        info[INSTANCES][instance_id][DIFF][HOST_DST] = \
+            dst_cloud.cloud_config.cloud.ssh_host
 
         convertor.run(image_id=image_id,
                       base_filename=base_file)
@@ -174,9 +176,11 @@ class PreTransportInstance(action.Action):
         disk_format = image[utl.IMAGE_BODY]['disk_format']
         if image_res.config.image.convert_to_raw:
             if disk_format.lower() != utl.RAW:
-                self.convert_file_to_raw(dst_cloud.cloud_config.cloud.host,
-                                         disk_format,
-                                         base_file)
+                self.convert_file_to_raw(
+                    dst_cloud.cloud_config.cloud.ssh_host,
+                    disk_format,
+                    base_file
+                )
                 disk_format = utl.RAW
         converter = convert_file_to_image.ConvertFileToImage(self.init,
                                                              cloud='dst_cloud')
