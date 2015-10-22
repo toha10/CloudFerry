@@ -590,9 +590,14 @@ class KeystoneIdentity(identity.Identity):
                 continue
 
             roles_ids = ast.literal_eval(roles_field)['roles']
+            if isinstance(roles_ids[0], dict):
+                _roles_ids = map(lambda role_id: role_id.get('id'), roles_ids)
+            else:
+                _roles_ids = roles_ids
+
             user_tenants_roles[user_ids[user_id]][tenant_ids[tenant_id]] = \
                 [{'role': {'name': roles[r].name, 'id': r}}
-                 for r in roles_ids]
+                 for r in _roles_ids]
         return user_tenants_roles
 
     def _get_user_tenants_roles_by_api(self, tenant_list, user_list):
