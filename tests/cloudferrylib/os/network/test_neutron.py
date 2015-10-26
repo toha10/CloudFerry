@@ -37,7 +37,10 @@ FAKE_CONFIG = utils.ext_dict(
     migrate=utils.ext_dict({'ext_net_map': 'fake_ext_net_map.yaml',
                             'speed_limit': '10MB',
                             'retry': '7',
-                            'time_wait': 5}))
+                            'time_wait': 5}),
+    network=utils.ext_dict({
+        'get_all_quota': True
+    }))
 
 
 class NeutronTestCase(test.TestCase):
@@ -73,7 +76,7 @@ class NeutronTestCase(test.TestCase):
                            'shared': False,
                            'tenant_id': 'fake_tenant_id_1',
                            'tenant_name': 'fake_tenant_name_1',
-                           'subnet_names': ['fake_subnet_name_1'],
+                           'subnets': [mock.MagicMock()],
                            'router:external': False,
                            'provider:physical_network': None,
                            'provider:network_type': 'gre',
@@ -153,10 +156,53 @@ class NeutronTestCase(test.TestCase):
         )
         self.assertEqual(self.neutron_mock_client(), client)
 
-    def test_get_networks(self):
+    def test_upload_quotas(self):
+        quota = {
+            'fake_tenant_name_1': {
+                'subnet': 12
+            }
+        }
+        self.neutron_network_client.upload_quota(quota)
+        self.neutron_mock_client().update_quota\
+            .assert_called_once_with("fake_tenant_id_1",
+                                     quota['fake_tenant_name_1'])
 
+    def test_get_quotas(self):
+        ten1 = mock.Mock()
+        ten1.id = "1"
+        ten1.name = "ten1"
+        self.identity_mock.get_tenants_list.return_value = \
+            [ten1]
+        self.identity_mock.try_get_tenant_name_by_id.return_value = "ten1"
+        self.neutron_mock_client().show_quota.return_value = \
+            {'subnet': 12}
+        self.neutron_mock_client().list_quotas.return_value = {
+            'quotas': [{'subnet': 12, 'tenant_id': "1"}]
+        }
+        expected_data = {
+            'ten1': {'subnet': 12}
+        }
+        res1 = self.neutron_network_client.get_quota("")
+        self.assertDictEqual(res1, expected_data)
+        res2 = self.neutron_network_client.get_quota("1")
+        self.assertDictEqual(res2, expected_data)
+        FAKE_CONFIG.network.get_all_quota = False
+        res3 = self.neutron_network_client.get_quota("")
+        self.assertDictEqual(res3, expected_data)
+        self.neutron_mock_client().list_quotas.return_value = {
+            'quotas': [{'subnet': 12, 'tenant_id': "1"}]
+        }
+        res4 = self.neutron_network_client.get_quota("1")
+        self.assertDictEqual(res4, expected_data)
+        self.neutron_mock_client().list_quotas.return_value = {
+            'quotas': [{'subnet': 12, 'tenant_id': "1"}]
+        }
+        res5 = self.neutron_network_client.get_quota("2")
+        self.assertDictEqual(res5, {})
+
+    def test_get_networks(self):
         fake_networks_list = {'networks': [{'status': 'ACTIVE',
-                                            'subnets': ['fake_subnet_id_1'],
+                                            'subnets': [mock.ANY],
                                             'name': 'fake_network_name_1',
                                             'provider:physical_network': None,
                                             'admin_state_up': True,
@@ -176,6 +222,7 @@ class NeutronTestCase(test.TestCase):
 
         networks_info = [self.net_1_info]
         networks_info_result = self.neutron_network_client.get_networks()
+        networks_info_result[0]['subnets'] = [mock.ANY]
         self.assertEquals(networks_info, networks_info_result)
 
     def test_get_subnets(self):
@@ -482,42 +529,6 @@ class NeutronTestCase(test.TestCase):
         if network_info['network']['provider:physical_network']:
             self.neutron_mock_client().create_network.\
                 assert_called_once_with(network_info)
-
-    def test_upload_subnets(self):
-
-        src_net_info = copy.deepcopy(self.net_1_info)
-        src_net_info['subnet_names'].append('fake_subnet_name_2')
-
-        dst_net_info = self.net_1_info
-
-        subnet1_info = self.subnet_1_info
-
-        subnet2_info = copy.deepcopy(self.subnet_2_info)
-        subnet2_info['network_name'] = 'fake_network_name_1'
-        subnet2_info['network_id'] = 'fake_network_id_1'
-        subnet2_info['tenant_name'] = 'fake_tenant_name_1'
-
-        self.neutron_network_client.get_networks = \
-            mock.Mock(return_value=[dst_net_info])
-        self.neutron_network_client.get_subnets = \
-            mock.Mock(return_value=[{'res_hash': 'fake_subnet_hash_1'}])
-
-        subnet_info = {
-            'subnet': {'name': 'fake_subnet_name_2',
-                       'enable_dhcp': True,
-                       'network_id': 'fake_network_id_1',
-                       'cidr': 'fake_cidr_2',
-                       'allocation_pools': [{'start': 'fake_start_ip_2',
-                                             'end': 'fake_end_ip_2'}],
-                       'gateway_ip': 'fake_gateway_ip_2',
-                       'ip_version': 4,
-                       'tenant_id': 'fake_tenant_id_1'}}
-
-        self.neutron_network_client.upload_subnets([src_net_info],
-                                                   [subnet1_info,
-                                                    subnet2_info])
-        self.neutron_mock_client().create_subnet.\
-            assert_called_once_with(subnet_info)
 
     def test_upload_routers(self):
 
