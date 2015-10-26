@@ -1202,17 +1202,25 @@ class NeutronNetwork(network.Network):
         for snet_id in src_router['subnet_ids']:
             snet_hash = self.get_res_hash_by_id(src_snets, snet_id)
             src_net = self.get_res_by_hash(src_snets, snet_hash)
-            ex_snet = self.get_res_by_hash(dst_snets, snet_hash)
+
             if src_net['external']:
                 LOG.debug("NOT connecting subnet '%s' to router '%s' because "
                           "it's connected to external network", snet_id,
                           dst_router['name'])
                 continue
-            LOG.debug("Adding subnet '%s' to router '%s'", snet_id,
-                      dst_router['name'])
-            self.neutron_client.add_interface_router(
-                dst_router['id'],
-                {"subnet_id": ex_snet['id']})
+
+            ex_snet = self.get_res_by_hash(dst_snets, snet_hash)
+            if ex_snet:
+                LOG.debug("Router '%s': trying to add interface to subnet '%s'",
+                          dst_router['name'], snet_id)
+                self.neutron_client.add_interface_router(
+                    dst_router['id'],
+                    {"subnet_id": ex_snet['id']})
+                LOG.debug("Router interface was successfully added")
+            else:
+                LOG.warning("NOT connecting subnet '%s' to router '%s' "
+                            "because it's cannot be found on DST cloud ",
+                            snet_id, dst_router['name'])
 
     def upload_floatingips(self, networks, src_floats):
         """Creates floating IPs on destination
@@ -1345,11 +1353,12 @@ class NeutronNetwork(network.Network):
 
     def get_new_extnet_id(self, src_net_id, src_nets, dst_nets):
         if src_net_id in self.ext_net_map:
-            dst_net_id = self.ext_net_map[src_net_id]
+            return self.ext_net_map[src_net_id]
         else:
             net_hash = self.get_res_hash_by_id(src_nets, src_net_id)
-            dst_net_id = self.get_res_by_hash(dst_nets, net_hash)['id']
-        return dst_net_id
+            dst_net = self.get_res_by_hash(dst_nets, net_hash)
+            if dst_net:
+                return dst_net.get('id')
 
 
 class Router(object):
