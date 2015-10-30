@@ -34,16 +34,35 @@ class SSHFileToCeph(driver_transporter.DriverTransporter):
         action_utils.delete_file_from_rbd(ssh_ip_dst, data['path_dst'])
         with settings(host_string=ssh_ip_src), utils.forward_agent(
                 env.key_filename):
-            rbd_import = rbd_util.RbdUtil.rbd_import_cmd
-            ssh_cmd_dst = cmd_cfg.ssh_cmd
-            ssh_dst = ssh_cmd_dst(data['host_dst'], rbd_import)
+            if self.cfg.migrate.file_compression == "dd":
+                rbd_import = rbd_util.RbdUtil.rbd_import_cmd
+                ssh_cmd_dst = cmd_cfg.ssh_cmd
+                ssh_dst = ssh_cmd_dst(data['host_dst'], rbd_import)
 
-            dd = cmd_cfg.dd_cmd_if
-            ssh_cmd_src = cmd_cfg.ssh_cmd
-            ssh_src = ssh_cmd_src(data['host_src'], dd)
+                dd = cmd_cfg.dd_cmd_if
+                ssh_cmd_src = cmd_cfg.ssh_cmd
+                ssh_src = ssh_cmd_src(data['host_src'], dd)
 
-            process = ssh_src >> ssh_dst
-            process = process('1M', data['path_src'], '2', '-',
-                              data['path_dst'])
+                process = ssh_src >> ssh_dst
+                process = process('1M', data['path_src'], '2', '-',
+                                  data['path_dst'])
 
-            self.src_cloud.ssh_util.execute(process)
+                self.src_cloud.ssh_util.execute(process)
+
+            elif self.cfg.migrate.file_compression == "gzip":
+
+                rbd_import = rbd_util.RbdUtil.rbd_import_cmd
+                gunzip_rbd_import = cmd_cfg.gunzip_cmd >> rbd_import
+                ssh_cmd_dst = cmd_cfg.ssh_cmd
+                ssh_dst = ssh_cmd_dst(data['host_dst'], gunzip_rbd_import)
+
+                gzip_cmd = cmd_cfg.gzip_cmd
+                ssh_cmd_src = cmd_cfg.ssh_cmd
+                ssh_src = ssh_cmd_src(data['host_src'], gzip_cmd)
+
+                process = ssh_src >> ssh_dst
+                process = process(self.cfg.migrate.level_compression,
+                                  data['path_src'], '2', '-',
+                                  data['path_dst'])
+
+                self.src_cloud.ssh_util.execute(process)
