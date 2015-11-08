@@ -305,8 +305,9 @@ class forward_agent:
         self.key_file = key_file
 
     def __enter__(self):
+        key_string = ' '.join(self.key_file)
         info_agent = local("eval `ssh-agent` && echo $SSH_AUTH_SOCK && ssh-add %s" %
-                           (self.key_file), capture=True).split("\n")
+                           key_string, capture=True).split("\n")
         self.pid = info_agent[0].split(" ")[-1]
         self.ssh_auth_sock = info_agent[1]
         os.environ["SSH_AGENT_PID"] = self.pid
