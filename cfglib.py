@@ -140,6 +140,9 @@ migrate_opts = [
                     'bootable volume creation operation during provisioning'),
     cfg.BoolOpt('custom_flavors', default=False,
                help='Add custom flavors for destination cloud during the migration'),
+    cfg.DictOpt('instances_flavor_map', default={},
+               help='Flavors map that will be used for mapping source and destination'
+                    'flavors of instances'),
     cfg.BoolOpt('skip_down_hosts', default=True,
                 help="If set to True, removes unreachable compute hosts from "
                      "nova hypervisor list. Otherwise migration process fails "

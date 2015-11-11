@@ -42,6 +42,10 @@ class MapComputeInfo(action.Action):
         for instance_id, instance in new_compute_info[utl.INSTANCES_TYPE].iteritems():
             _instance = instance['instance']
             flavor_name = src_flavors_dict[_instance['flavor_id']]
+            flavors_map = self.src_cloud.cloud_config.migrate.instances_flavor_map
+            if flavors_map:
+                if flavor_name in flavors_map:
+                    flavor_name = flavors_map[flavor_name]
             if self.src_cloud.cloud_config.migrate.custom_flavors:
                 flavor_name = CUSTOM + "-" + flavor_name
             _instance['flavor_id'] = dst_flavors_dict[flavor_name]
