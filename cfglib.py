@@ -202,6 +202,8 @@ src_mysql_opts = [
                help='port for mysql connection'),
     cfg.StrOpt('db_connection', default='mysql+mysqlconnector',
                help='driver for connection'),
+    cfg.StrOpt('ssh_host', default='$db_host',
+               help='ip address of mysql host that is accesible via ssh'),
 ]
 
 
@@ -376,6 +378,8 @@ dst_mysql_opts = [
                help='port for mysql connection'),
     cfg.StrOpt('db_connection', default='mysql+mysqlconnector',
                help='driver for connection'),
+    cfg.StrOpt('ssh_host', default='$db_host',
+               help='ip address of mysql host that is accesible via ssh'),
 ]
 
 dst_rabbit = cfg.OptGroup(name='dst_rabbit',

@@ -14,7 +14,6 @@
 
 
 from cloudferrylib.base.action import action
-from cloudferrylib.utils import mysql_connector
 from cloudferrylib.utils import utils
 from fabric.api import local
 
@@ -42,7 +41,7 @@ class MysqlDump(action.Action):
     """
 
     def run(self, *args, **kwargs):
-        db_host = mysql_connector.get_db_host(self.cloud.cloud_config)
+        ssh_db_host = self.cloud.cloud_config.mysql.ssh_host
 
         # dump mysql to file
         # probably, we have to choose what databases we have to dump
@@ -56,12 +55,12 @@ class MysqlDump(action.Action):
             password=self.cloud.cloud_config.mysql.db_password,
             path=self.cloud.cloud_config.snapshot.snapshot_path)
         LOG.info("dumping database with command '%s'", command)
-        self.cloud.ssh_util.execute(command, host_exec=db_host)
+        self.cloud.ssh_util.execute(command, host_exec=ssh_db_host)
         # copy dump file to host with cloudferry (for now just in case)
         # in future we will store snapshot for every step of migration
         key_string = ' -i '.join(self.cloud.config.migrate.key_filename)
         context = {
-            'host_src': db_host,
+            'host_src': ssh_db_host,
             'path_src': self.cloud.cloud_config.snapshot.snapshot_path,
             'user_src': self.cloud.cloud_config.cloud.ssh_user,
             'key': key_string,
@@ -81,7 +80,7 @@ class MysqlRestore(action.Action):
     """
 
     def run(self, *args, **kwargs):
-        db_host = mysql_connector.get_db_host(self.cloud.cloud_config)
+        ssh_db_host = self.cloud.cloud_config.mysql.ssh_host
 
         # apply sqldump from file to mysql
         command = ("mysql "
@@ -92,5 +91,5 @@ class MysqlRestore(action.Action):
             password=self.cloud.cloud_config.mysql.db_password,
             path=self.cloud.cloud_config.snapshot.snapshot_path)
         LOG.info("restoring database with command '%s'", command)
-        self.cloud.ssh_util.execute(command, host_exec=db_host)
+        self.cloud.ssh_util.execute(command, host_exec=ssh_db_host)
         return {}
